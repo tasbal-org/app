@@ -1,0 +1,41 @@
+# Development Dockerfile with hot-reload support
+FROM eclipse-temurin:21-jdk-alpine
+
+# Install curl, bash, sudo and other tools for development
+RUN apk add --no-cache curl bash git sudo
+
+# Host user configuration
+ARG UID=1000
+ARG GID=1000
+ARG USER=tasbal
+ARG GROUP=tasbal
+ARG PASS=tasbal
+
+# Set working directory for the application
+WORKDIR /app
+
+# Copy Maven wrapper and make it executable (as root)
+COPY mvnw .
+COPY .mvn .mvn
+RUN chmod +x mvnw
+
+# Copy pom.xml
+COPY pom.xml .
+
+# Create user with same UID/GID as host user (Alpine style)
+# If GID already exists, use the existing group
+RUN (addgroup -g $GID $GROUP 2>/dev/null || true) && \
+    GROUP_NAME=$(getent group $GID | cut -d: -f1) && \
+    adduser -D -s /bin/bash -u $UID -G ${GROUP_NAME:-$GROUP} $USER && \
+    echo "$USER:$PASS" | chpasswd && \
+    echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    chown -R $USER:${GROUP_NAME:-$GROUP} /app
+
+# Switch to non-root user
+USER ${USER}
+
+# Download dependencies (continue even if fails)
+RUN ./mvnw dependency:go-offline -B || true
+
+# Use Spring Boot DevTools for hot-reload
+CMD ["./mvnw", "spring-boot:run", "-Dspring-boot.run.jvmArguments=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"]
