@@ -1,23 +1,30 @@
 package com.tasbal.backend.presentation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+@Schema(description = "風船作成リクエスト")
 public class BalloonRequest {
 
     @NotBlank(message = "Title is required")
     @Size(max = 100, message = "Title must be less than 100 characters")
+    @Schema(description = "風船のタイトル", example = "今週の目標", required = true, maxLength = 100)
     private String title;
 
+    @Schema(description = "風船の説明", example = "今週中に終わらせるタスクをまとめる風船", nullable = true)
     private String description;
 
     @NotNull(message = "colorId is required")
+    @Schema(description = "風船の色ID", example = "1", required = true)
     private Short colorId;
 
+    @Schema(description = "タグアイコンID", example = "5", nullable = true)
     private Short tagIconId;
 
     @NotNull(message = "isPublic is required")
+    @Schema(description = "公開設定", example = "true", required = true)
     private Boolean isPublic;
 
     // Constructors

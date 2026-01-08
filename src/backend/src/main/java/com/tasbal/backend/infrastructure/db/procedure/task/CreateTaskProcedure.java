@@ -1,8 +1,8 @@
-package com.tasbal.backend.infrastructure.db.stored.task;
+package com.tasbal.backend.infrastructure.db.procedure.task;
 
-import com.tasbal.backend.infrastructure.db.stored.BaseStoredProcedure;
-import com.tasbal.backend.infrastructure.db.stored.annotation.Parameter;
-import com.tasbal.backend.infrastructure.db.stored.annotation.StoredProcedure;
+import com.tasbal.backend.infrastructure.db.common.BaseStoredProcedure;
+import com.tasbal.backend.infrastructure.db.common.annotation.Parameter;
+import com.tasbal.backend.infrastructure.db.common.annotation.StoredProcedure;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.time.OffsetDateTime;

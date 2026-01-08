@@ -1,7 +1,7 @@
-package com.tasbal.backend.infrastructure.db.stored;
+package com.tasbal.backend.infrastructure.db.common;
 
-import com.tasbal.backend.infrastructure.db.stored.annotation.Parameter;
-import com.tasbal.backend.infrastructure.db.stored.annotation.StoredProcedure;
+import com.tasbal.backend.infrastructure.db.common.annotation.Parameter;
+import com.tasbal.backend.infrastructure.db.common.annotation.StoredProcedure;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 

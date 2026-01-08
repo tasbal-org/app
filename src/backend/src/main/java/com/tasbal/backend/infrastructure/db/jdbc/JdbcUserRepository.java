@@ -3,91 +3,159 @@ package com.tasbal.backend.infrastructure.db.jdbc;
 import com.tasbal.backend.domain.model.User;
 import com.tasbal.backend.domain.model.UserSettings;
 import com.tasbal.backend.domain.repository.UserRepository;
-import com.tasbal.backend.infrastructure.db.stored.StoredProcedures;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
+import com.tasbal.backend.infrastructure.db.common.StoredFunctionExecutor;
+import com.tasbal.backend.infrastructure.db.common.StoredProcedureExecutor;
+import com.tasbal.backend.infrastructure.db.function.user.CreateGuestUserFunction;
+import com.tasbal.backend.infrastructure.db.function.user.GetUserByIdFunction;
+import com.tasbal.backend.infrastructure.db.function.user.GetUserSettingsFunction;
+import com.tasbal.backend.infrastructure.db.procedure.user.UpdateUserSettingsProcedure;
 import org.springframework.stereotype.Repository;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * ユーザーリポジトリのJDBC実装。
+ *
+ * <p>このクラスは{@link UserRepository}インターフェースを実装し、
+ * ストアドプロシージャを使用してユーザーおよびユーザー設定のデータアクセスを提供します。</p>
+ *
+ * <p>すべてのデータベース操作は{@link StoredProcedureExecutor}を介して
+ * ストアドプロシージャクラスを実行します。</p>
+ *
+ * @author Tasbal Team
+ * @since 1.0.0
+ * @see UserRepository
+ * @see StoredProcedureExecutor
+ */
 @Repository
 public class JdbcUserRepository implements UserRepository {
 
-    private static final String SELECT_FROM = "SELECT * FROM ";
+    private final StoredProcedureExecutor procedureExecutor;
+    private final StoredFunctionExecutor functionExecutor;
 
-    private final JdbcTemplate jdbcTemplate;
-
-    public JdbcUserRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    /**
+     * コンストラクタ。
+     *
+     * @param procedureExecutor ストアドプロシージャ実行クラス
+     * @param functionExecutor ストアドファンクション実行クラス
+     */
+    public JdbcUserRepository(
+            StoredProcedureExecutor procedureExecutor,
+            StoredFunctionExecutor functionExecutor) {
+        this.procedureExecutor = procedureExecutor;
+        this.functionExecutor = functionExecutor;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public User createGuest(String handle) {
-        String sql;
-        List<User> results;
-        if (handle == null) {
-            sql = SELECT_FROM + StoredProcedures.SP_CREATE_GUEST_USER + "()";
-            results = jdbcTemplate.query(sql, userRowMapper());
-        } else {
-            sql = SELECT_FROM + StoredProcedures.SP_CREATE_GUEST_USER + "(?)";
-            results = jdbcTemplate.query(sql, userRowMapper(), handle);
-        }
-        return results.isEmpty() ? null : results.get(0);
+        CreateGuestUserFunction function = new CreateGuestUserFunction(handle);
+        CreateGuestUserFunction.Result result = functionExecutor.executeForSingleRequired(function);
+        return mapToUser(result);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<User> findById(UUID userId) {
-        String sql = SELECT_FROM + StoredProcedures.SP_GET_USER_BY_ID + "(?)";
-        List<User> results = jdbcTemplate.query(sql, userRowMapper(), userId);
-        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+        GetUserByIdFunction function = new GetUserByIdFunction(userId);
+        GetUserByIdFunction.Result result = functionExecutor.executeForSingle(function);
+        return result != null ? Optional.of(mapToUser(result)) : Optional.empty();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<UserSettings> findSettingsByUserId(UUID userId) {
-        String sql = SELECT_FROM + StoredProcedures.SP_GET_USER_SETTINGS + "(?)";
-        List<UserSettings> results = jdbcTemplate.query(sql, userSettingsRowMapper(), userId);
-        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+        GetUserSettingsFunction function = new GetUserSettingsFunction(userId);
+        GetUserSettingsFunction.Result result = functionExecutor.executeForSingle(function);
+        return result != null ? Optional.of(mapToUserSettings(result)) : Optional.empty();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public UserSettings updateSettings(UUID userId, String countryCode, Short renderQuality, Boolean autoLowPower) {
-        String sql = SELECT_FROM + StoredProcedures.SP_UPDATE_USER_SETTINGS + "(?, ?, ?, ?)";
-        List<UserSettings> results = jdbcTemplate.query(sql, userSettingsRowMapper(), userId, countryCode, renderQuality, autoLowPower);
-        return results.isEmpty() ? null : results.get(0);
+        UpdateUserSettingsProcedure procedure = new UpdateUserSettingsProcedure(userId, countryCode, renderQuality, autoLowPower);
+        UpdateUserSettingsProcedure.Result result = procedureExecutor.executeForSingle(procedure);
+        return result != null ? mapToUserSettings(result) : null;
     }
 
-    private RowMapper<User> userRowMapper() {
-        return (rs, rowNum) -> new User(
-                rs.getObject("id", UUID.class),
-                rs.getString("handle"),
-                rs.getShort("plan"),
-                rs.getBoolean("is_guest"),
-                rs.getShort("auth_state"),
-                getOffsetDateTime(rs, "created_at"),
-                getOffsetDateTime(rs, "updated_at"),
-                getOffsetDateTime(rs, "last_login_at"),
-                getOffsetDateTime(rs, "deleted_at")
+    /**
+     * {@link CreateGuestUserFunction.Result}をドメインモデル{@link User}に変換します。
+     *
+     * @param result ストアドファンクションの実行結果
+     * @return ドメインモデルのUserオブジェクト
+     */
+    private User mapToUser(CreateGuestUserFunction.Result result) {
+        return new User(
+                result.getId(),
+                result.getHandle(),
+                result.getPlan(),
+                result.getIsGuest(),
+                result.getAuthState(),
+                result.getCreatedAt(),
+                result.getUpdatedAt(),
+                null, // last_login_at is not returned by sp_create_guest_user
+                null  // deleted_at is not returned by sp_create_guest_user
         );
     }
 
-    private RowMapper<UserSettings> userSettingsRowMapper() {
-        return (rs, rowNum) -> new UserSettings(
-                rs.getObject("user_id", UUID.class),
-                rs.getString("country_code"),
-                rs.getShort("render_quality"),
-                rs.getBoolean("auto_low_power"),
-                getOffsetDateTime(rs, "updated_at")
+    /**
+     * {@link GetUserByIdFunction.Result}をドメインモデル{@link User}に変換します。
+     *
+     * @param result ストアドファンクションの実行結果
+     * @return ドメインモデルのUserオブジェクト
+     */
+    private User mapToUser(GetUserByIdFunction.Result result) {
+        return new User(
+                result.getId(),
+                result.getHandle(),
+                result.getPlan(),
+                result.getIsGuest(),
+                result.getAuthState(),
+                result.getCreatedAt(),
+                result.getUpdatedAt(),
+                result.getLastLoginAt(),
+                result.getDeletedAt()
         );
     }
 
-    private OffsetDateTime getOffsetDateTime(ResultSet rs, String columnName) throws SQLException {
-        Timestamp timestamp = rs.getTimestamp(columnName);
-        return timestamp != null ? OffsetDateTime.ofInstant(timestamp.toInstant(), java.time.ZoneOffset.UTC) : null;
+    /**
+     * {@link GetUserSettingsFunction.Result}をドメインモデル{@link UserSettings}に変換します。
+     *
+     * @param result ストアドファンクションの実行結果
+     * @return ドメインモデルのUserSettingsオブジェクト
+     */
+    private UserSettings mapToUserSettings(GetUserSettingsFunction.Result result) {
+        return new UserSettings(
+                result.getUserId(),
+                result.getCountryCode(),
+                result.getRenderQuality(),
+                result.getAutoLowPower(),
+                result.getUpdatedAt()
+        );
+    }
+
+    /**
+     * {@link UpdateUserSettingsProcedure.Result}をドメインモデル{@link UserSettings}に変換します。
+     *
+     * @param result ストアドプロシージャの実行結果
+     * @return ドメインモデルのUserSettingsオブジェクト
+     */
+    private UserSettings mapToUserSettings(UpdateUserSettingsProcedure.Result result) {
+        return new UserSettings(
+                result.getUserId(),
+                result.getCountryCode(),
+                result.getRenderQuality(),
+                result.getAutoLowPower(),
+                result.getUpdatedAt()
+        );
     }
 }

@@ -1,43 +1,109 @@
-package com.tasbal.backend.infrastructure.db.stored.task;
+package com.tasbal.backend.infrastructure.db.procedure.task;
 
-import com.tasbal.backend.infrastructure.db.stored.BaseStoredProcedure;
-import com.tasbal.backend.infrastructure.db.stored.annotation.Parameter;
-import com.tasbal.backend.infrastructure.db.stored.annotation.StoredProcedure;
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.tasbal.backend.infrastructure.db.common.BaseStoredProcedure;
+import com.tasbal.backend.infrastructure.db.common.annotation.Parameter;
+import com.tasbal.backend.infrastructure.db.common.annotation.StoredProcedure;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@StoredProcedure("sp_get_task_by_id")
-public class GetTaskByIdProcedure extends BaseStoredProcedure<GetTaskByIdProcedure.Result> {
+/**
+ * タスク更新ストアドプロシージャ {@code sp_update_task} の呼び出しクラス。
+ *
+ * <p>このクラスは既存のタスクの情報を更新します。
+ * タイトル、メモ、期限日時、ピン留めフラグを更新できます。</p>
+ *
+ * @author Tasbal Team
+ * @since 1.0.0
+ */
+@StoredProcedure("sp_update_task")
+public class UpdateTaskProcedure extends BaseStoredProcedure<UpdateTaskProcedure.Result> {
 
+    /** タスクID */
     @Parameter("p_task_id")
     private UUID taskId;
 
+    /** ユーザーID */
     @Parameter("p_user_id")
     private UUID userId;
 
-    public GetTaskByIdProcedure(UUID taskId, UUID userId) {
+    /** タスクのタイトル */
+    @Parameter("p_title")
+    private String title;
+
+    /** タスクのメモ */
+    @Parameter("p_memo")
+    private String memo;
+
+    /** タスクの期限日時 */
+    @Parameter("p_due_at")
+    private OffsetDateTime dueAt;
+
+    /** ピン留めフラグ */
+    @Parameter("p_pinned")
+    private Boolean pinned;
+
+    /**
+     * コンストラクタ。
+     *
+     * @param taskId タスクID
+     * @param userId ユーザーID
+     * @param title タスクのタイトル
+     * @param memo タスクのメモ
+     * @param dueAt タスクの期限日時
+     * @param pinned ピン留めフラグ
+     */
+    public UpdateTaskProcedure(UUID taskId, UUID userId, String title, String memo,
+                               OffsetDateTime dueAt, Boolean pinned) {
         super(new ResultRowMapper());
         this.taskId = taskId;
         this.userId = userId;
+        this.title = title;
+        this.memo = memo;
+        this.dueAt = dueAt;
+        this.pinned = pinned;
     }
 
+    /**
+     * ストアドプロシージャの戻り値を表すクラス。
+     */
     public static class Result {
+        /** タスクID */
         private UUID id;
+
+        /** ユーザーID */
         private UUID userId;
+
+        /** タスクのタイトル */
         private String title;
+
+        /** タスクのメモ */
         private String memo;
+
+        /** タスクの期限日時 */
         private OffsetDateTime dueAt;
+
+        /** タスクのステータス */
         private Short status;
+
+        /** ピン留めフラグ */
         private Boolean pinned;
+
+        /** 完了日時 */
         private OffsetDateTime completedAt;
+
+        /** アーカイブ日時 */
         private OffsetDateTime archivedAt;
+
+        /** 作成日時 */
         private OffsetDateTime createdAt;
+
+        /** 更新日時 */
         private OffsetDateTime updatedAt;
+
+        /** 削除日時 */
         private OffsetDateTime deletedAt;
-        private UUID[] tagIds;
 
         public UUID getId() { return id; }
         public void setId(UUID id) { this.id = id; }
@@ -63,10 +129,11 @@ public class GetTaskByIdProcedure extends BaseStoredProcedure<GetTaskByIdProcedu
         public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
         public OffsetDateTime getDeletedAt() { return deletedAt; }
         public void setDeletedAt(OffsetDateTime deletedAt) { this.deletedAt = deletedAt; }
-        public UUID[] getTagIds() { return tagIds; }
-        public void setTagIds(UUID[] tagIds) { this.tagIds = tagIds; }
     }
 
+    /**
+     * ResultSetから Result へのマッピングを行う RowMapper。
+     */
     private static class ResultRowMapper implements RowMapper<Result> {
         @Override
         public Result mapRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
@@ -83,12 +150,6 @@ public class GetTaskByIdProcedure extends BaseStoredProcedure<GetTaskByIdProcedu
             result.setCreatedAt(rs.getObject("created_at", OffsetDateTime.class));
             result.setUpdatedAt(rs.getObject("updated_at", OffsetDateTime.class));
             result.setDeletedAt(rs.getObject("deleted_at", OffsetDateTime.class));
-
-            java.sql.Array tagIdsArray = rs.getArray("tag_ids");
-            if (tagIdsArray != null) {
-                result.setTagIds((UUID[]) tagIdsArray.getArray());
-            }
-
             return result;
         }
     }

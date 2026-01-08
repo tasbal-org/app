@@ -1,4 +1,4 @@
-package com.tasbal.backend.infrastructure.db.stored.annotation;
+package com.tasbal.backend.infrastructure.db.common.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

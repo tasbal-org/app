@@ -2,81 +2,141 @@ package com.tasbal.backend.infrastructure.db.jdbc;
 
 import com.tasbal.backend.domain.model.Balloon;
 import com.tasbal.backend.domain.repository.BalloonRepository;
-import com.tasbal.backend.infrastructure.db.stored.StoredProcedures;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
+import com.tasbal.backend.infrastructure.db.common.StoredFunctionExecutor;
+import com.tasbal.backend.infrastructure.db.common.StoredProcedureExecutor;
+import com.tasbal.backend.infrastructure.db.function.balloon.GetBalloonSelectionFunction;
+import com.tasbal.backend.infrastructure.db.function.balloon.GetPublicBalloonsFunction;
+import com.tasbal.backend.infrastructure.db.procedure.balloon.CreateBalloonProcedure;
+import com.tasbal.backend.infrastructure.db.procedure.balloon.SetBalloonSelectionProcedure;
 import org.springframework.stereotype.Repository;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * バルーンリポジトリのJDBC実装。
+ *
+ * <p>このクラスは{@link BalloonRepository}インターフェースを実装し、
+ * ストアドファンクション・プロシージャを使用してバルーンのデータアクセスを提供します。</p>
+ *
+ * <p>データベース操作は以下のルールに従います:</p>
+ * <ul>
+ *   <li>GET系操作: {@link StoredFunctionExecutor}経由でストアドファンクションを実行</li>
+ *   <li>CREATE/UPDATE/DELETE系操作: {@link StoredProcedureExecutor}経由でストアドプロシージャを実行</li>
+ * </ul>
+ *
+ * @author Tasbal Team
+ * @since 1.0.0
+ * @see BalloonRepository
+ * @see StoredFunctionExecutor
+ * @see StoredProcedureExecutor
+ */
 @Repository
 public class JdbcBalloonRepository implements BalloonRepository {
 
-    private static final String SELECT_FROM = "SELECT * FROM ";
+    private final StoredProcedureExecutor procedureExecutor;
+    private final StoredFunctionExecutor functionExecutor;
 
-    private final JdbcTemplate jdbcTemplate;
-
-    public JdbcBalloonRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    /**
+     * コンストラクタ。
+     *
+     * @param procedureExecutor ストアドプロシージャ実行クラス
+     * @param functionExecutor ストアドファンクション実行クラス
+     */
+    public JdbcBalloonRepository(
+            StoredProcedureExecutor procedureExecutor,
+            StoredFunctionExecutor functionExecutor) {
+        this.procedureExecutor = procedureExecutor;
+        this.functionExecutor = functionExecutor;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Balloon create(UUID ownerUserId, String title, String description, Short colorId, Short tagIconId, Boolean isPublic) {
-        String sql = SELECT_FROM + StoredProcedures.SP_CREATE_BALLOON + "(?, ?, ?, ?, ?, ?)";
-        List<Balloon> results = jdbcTemplate.query(sql, balloonRowMapper(), ownerUserId, title, description, colorId, tagIconId, isPublic);
-        return results.isEmpty() ? null : results.get(0);
+        CreateBalloonProcedure procedure = new CreateBalloonProcedure(ownerUserId, title, description, colorId, tagIconId, isPublic);
+        CreateBalloonProcedure.Result result = procedureExecutor.executeForSingle(procedure);
+        return result != null ? mapToBalloon(result) : null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Balloon> findPublicBalloons(int limit, int offset) {
-        String sql = SELECT_FROM + StoredProcedures.SP_GET_PUBLIC_BALLOONS + "(?, ?)";
-        return jdbcTemplate.query(sql, balloonRowMapper(), limit, offset);
+        GetPublicBalloonsFunction function = new GetPublicBalloonsFunction(limit, offset);
+        List<GetPublicBalloonsFunction.Result> results = functionExecutor.execute(function);
+        return results.stream()
+                .map(this::mapToBalloon)
+                .toList();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<UUID> findSelectedBalloon(UUID userId) {
-        String sql = SELECT_FROM + StoredProcedures.SP_GET_BALLOON_SELECTION + "(?)";
-        List<UUID> results = jdbcTemplate.query(sql, (rs, rowNum) -> rs.getObject("balloon_id", UUID.class), userId);
-        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+        GetBalloonSelectionFunction function = new GetBalloonSelectionFunction(userId);
+        GetBalloonSelectionFunction.Result result = functionExecutor.executeForSingle(function);
+        return result != null ? Optional.of(result.getBalloonId()) : Optional.empty();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setSelection(UUID userId, UUID balloonId) {
-        String sql = SELECT_FROM + StoredProcedures.SP_SET_BALLOON_SELECTION + "(?, ?)";
-        jdbcTemplate.query(sql, (rs, rowNum) -> rs.getObject("balloon_id", UUID.class), userId, balloonId);
+        SetBalloonSelectionProcedure procedure = new SetBalloonSelectionProcedure(userId, balloonId);
+        procedureExecutor.execute(procedure);
     }
 
-    private RowMapper<Balloon> balloonRowMapper() {
-        return (rs, rowNum) -> new Balloon(
-                rs.getObject("id", UUID.class),
-                rs.getShort("balloon_type"),
-                rs.getShort("display_group"),
-                rs.getShort("visibility"),
-                rs.getObject("owner_user_id", UUID.class),
-                rs.getString("title"),
-                rs.getString("description"),
-                getShortOrNull(rs, "color_id"),
-                getShortOrNull(rs, "tag_icon_id"),
-                rs.getString("country_code"),
-                rs.getBoolean("is_active"),
-                getOffsetDateTime(rs, "created_at"),
-                getOffsetDateTime(rs, "updated_at")
+    /**
+     * {@link CreateBalloonProcedure.Result}をドメインモデル{@link Balloon}に変換します。
+     *
+     * @param result ストアドプロシージャの実行結果
+     * @return ドメインモデルのBalloonオブジェクト
+     */
+    private Balloon mapToBalloon(CreateBalloonProcedure.Result result) {
+        return new Balloon(
+                result.getId(),
+                result.getBalloonType(),
+                result.getDisplayGroup(),
+                result.getVisibility(),
+                result.getOwnerUserId(),
+                result.getTitle(),
+                result.getDescription(),
+                result.getColorId(),
+                result.getTagIconId(),
+                result.getCountryCode(),
+                result.getIsActive(),
+                result.getCreatedAt(),
+                result.getUpdatedAt()
         );
     }
 
-    private Short getShortOrNull(ResultSet rs, String columnName) throws SQLException {
-        short value = rs.getShort(columnName);
-        return rs.wasNull() ? null : value;
-    }
-
-    private OffsetDateTime getOffsetDateTime(ResultSet rs, String columnName) throws SQLException {
-        Timestamp timestamp = rs.getTimestamp(columnName);
-        return timestamp != null ? OffsetDateTime.ofInstant(timestamp.toInstant(), java.time.ZoneOffset.UTC) : null;
+    /**
+     * {@link GetPublicBalloonsFunction.Result}をドメインモデル{@link Balloon}に変換します。
+     *
+     * @param result ストアドファンクションの実行結果
+     * @return ドメインモデルのBalloonオブジェクト
+     */
+    private Balloon mapToBalloon(GetPublicBalloonsFunction.Result result) {
+        return new Balloon(
+                result.getId(),
+                result.getBalloonType(),
+                result.getDisplayGroup(),
+                result.getVisibility(),
+                result.getOwnerUserId(),
+                result.getTitle(),
+                result.getDescription(),
+                result.getColorId(),
+                result.getTagIconId(),
+                result.getCountryCode(),
+                result.getIsActive(),
+                result.getCreatedAt(),
+                result.getUpdatedAt()
+        );
     }
 }

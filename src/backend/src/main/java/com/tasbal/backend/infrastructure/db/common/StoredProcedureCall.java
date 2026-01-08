@@ -1,4 +1,4 @@
-package com.tasbal.backend.infrastructure.db.stored;
+package com.tasbal.backend.infrastructure.db.common;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 

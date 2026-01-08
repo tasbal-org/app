@@ -4,6 +4,9 @@ import com.tasbal.backend.application.service.BalloonService;
 import com.tasbal.backend.domain.model.Balloon;
 import com.tasbal.backend.presentation.dto.BalloonRequest;
 import com.tasbal.backend.presentation.dto.BalloonResponse;
+import com.tasbal.backend.presentation.dto.BalloonSelectionRequest;
+import com.tasbal.backend.presentation.dto.BalloonSelectionResponse;
+import com.tasbal.backend.presentation.dto.MessageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,9 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -59,23 +60,18 @@ public class BalloonController {
 
     @GetMapping("/selection")
     @Operation(summary = "選択中の風船を取得", description = "現在選択している風船のIDを取得します")
-    public ResponseEntity<Map<String, UUID>> getSelectedBalloon(
+    public ResponseEntity<BalloonSelectionResponse> getSelectedBalloon(
             @Parameter(hidden = true) @RequestHeader("X-User-Id") UUID userId) {
         UUID balloonId = balloonService.getSelectedBalloon(userId);
-        Map<String, UUID> response = new HashMap<>();
-        response.put("balloonId", balloonId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(new BalloonSelectionResponse(balloonId));
     }
 
     @PutMapping("/selection")
     @Operation(summary = "選択中の風船を設定", description = "タスク完了時に加算される風船を選択します")
-    public ResponseEntity<Map<String, String>> setSelectedBalloon(
+    public ResponseEntity<MessageResponse> setSelectedBalloon(
             @Parameter(hidden = true) @RequestHeader("X-User-Id") UUID userId,
-            @RequestBody Map<String, UUID> request) {
-        UUID balloonId = request.get("balloonId");
-        balloonService.setSelectedBalloon(userId, balloonId);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Selection updated");
-        return ResponseEntity.ok(response);
+            @Valid @RequestBody BalloonSelectionRequest request) {
+        balloonService.setSelectedBalloon(userId, request.getBalloonId());
+        return ResponseEntity.ok(new MessageResponse("Selection updated"));
     }
 }

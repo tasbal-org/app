@@ -1,47 +1,90 @@
-package com.tasbal.backend.infrastructure.db.stored.task;
+package com.tasbal.backend.infrastructure.db.procedure.task;
 
-import com.tasbal.backend.infrastructure.db.stored.BaseStoredProcedure;
-import com.tasbal.backend.infrastructure.db.stored.annotation.Parameter;
-import com.tasbal.backend.infrastructure.db.stored.annotation.StoredProcedure;
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.tasbal.backend.infrastructure.db.common.BaseStoredProcedure;
+import com.tasbal.backend.infrastructure.db.common.annotation.Parameter;
+import com.tasbal.backend.infrastructure.db.common.annotation.StoredProcedure;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@StoredProcedure("sp_get_tasks")
-public class GetTasksProcedure extends BaseStoredProcedure<GetTasksProcedure.Result> {
+/**
+ * タスク完了状態切り替えストアドプロシージャ {@code sp_toggle_task_completion} の呼び出しクラス。
+ *
+ * <p>このクラスはタスクの完了/未完了状態を切り替えます。
+ * 完了時には完了日時が設定され、未完了時には完了日時がクリアされます。</p>
+ *
+ * @author Tasbal Team
+ * @since 1.0.0
+ */
+@StoredProcedure("sp_toggle_task_completion")
+public class ToggleTaskCompletionProcedure extends BaseStoredProcedure<ToggleTaskCompletionProcedure.Result> {
 
+    /** タスクID */
+    @Parameter("p_task_id")
+    private UUID taskId;
+
+    /** ユーザーID */
     @Parameter("p_user_id")
     private UUID userId;
 
-    @Parameter("p_limit")
-    private Integer limit;
+    /** 完了フラグ（true: 完了、false: 未完了） */
+    @Parameter("p_is_done")
+    private Boolean isDone;
 
-    @Parameter("p_offset")
-    private Integer offset;
-
-    public GetTasksProcedure(UUID userId, Integer limit, Integer offset) {
+    /**
+     * コンストラクタ。
+     *
+     * @param taskId タスクID
+     * @param userId ユーザーID
+     * @param isDone 完了フラグ（true: 完了、false: 未完了）
+     */
+    public ToggleTaskCompletionProcedure(UUID taskId, UUID userId, Boolean isDone) {
         super(new ResultRowMapper());
+        this.taskId = taskId;
         this.userId = userId;
-        this.limit = limit;
-        this.offset = offset;
+        this.isDone = isDone;
     }
 
+    /**
+     * ストアドプロシージャの戻り値を表すクラス。
+     */
     public static class Result {
+        /** タスクID */
         private UUID id;
+
+        /** ユーザーID */
         private UUID userId;
+
+        /** タスクのタイトル */
         private String title;
+
+        /** タスクのメモ */
         private String memo;
+
+        /** タスクの期限日時 */
         private OffsetDateTime dueAt;
+
+        /** タスクのステータス */
         private Short status;
+
+        /** ピン留めフラグ */
         private Boolean pinned;
+
+        /** 完了日時 */
         private OffsetDateTime completedAt;
+
+        /** アーカイブ日時 */
         private OffsetDateTime archivedAt;
+
+        /** 作成日時 */
         private OffsetDateTime createdAt;
+
+        /** 更新日時 */
         private OffsetDateTime updatedAt;
+
+        /** 削除日時 */
         private OffsetDateTime deletedAt;
-        private UUID[] tagIds;
 
         public UUID getId() { return id; }
         public void setId(UUID id) { this.id = id; }
@@ -67,10 +110,11 @@ public class GetTasksProcedure extends BaseStoredProcedure<GetTasksProcedure.Res
         public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
         public OffsetDateTime getDeletedAt() { return deletedAt; }
         public void setDeletedAt(OffsetDateTime deletedAt) { this.deletedAt = deletedAt; }
-        public UUID[] getTagIds() { return tagIds; }
-        public void setTagIds(UUID[] tagIds) { this.tagIds = tagIds; }
     }
 
+    /**
+     * ResultSetから Result へのマッピングを行う RowMapper。
+     */
     private static class ResultRowMapper implements RowMapper<Result> {
         @Override
         public Result mapRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
@@ -87,12 +131,6 @@ public class GetTasksProcedure extends BaseStoredProcedure<GetTasksProcedure.Res
             result.setCreatedAt(rs.getObject("created_at", OffsetDateTime.class));
             result.setUpdatedAt(rs.getObject("updated_at", OffsetDateTime.class));
             result.setDeletedAt(rs.getObject("deleted_at", OffsetDateTime.class));
-
-            java.sql.Array tagIdsArray = rs.getArray("tag_ids");
-            if (tagIdsArray != null) {
-                result.setTagIds((UUID[]) tagIdsArray.getArray());
-            }
-
             return result;
         }
     }
