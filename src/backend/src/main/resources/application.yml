@@ -47,7 +47,7 @@ server:
 logging:
   level:
     root: INFO
-    com.tasbal.backend: DEBUG
+    com.tasbal: DEBUG
     org.springframework.jdbc: DEBUG
     org.springdoc: DEBUG
     org.springframework.web: DEBUG
