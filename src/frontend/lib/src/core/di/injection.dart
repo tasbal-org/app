@@ -9,6 +9,7 @@ import 'package:dio/dio.dart';
 import 'package:tasbal/src/core/network/dio_client.dart';
 import 'package:tasbal/src/config/environment.dart';
 import 'package:tasbal/src/features/auth/di/auth_injection.dart';
+import 'package:tasbal/src/features/onboarding/di/onboarding_injection.dart';
 
 /// GetItのグローバルインスタンス
 ///
@@ -42,6 +43,9 @@ Future<void> addDependencies() async {
 
   // 認証機能の依存性を登録
   await addAuthDependencies(sl);
+
+  // オンボーディング機能の依存性を登録
+  await addOnboardingDependencies(sl);
 
   // TODO: タスク機能の依存性を登録
   // await addTaskDependencies(sl);

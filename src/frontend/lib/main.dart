@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:logging/logging.dart';
 import 'package:redux/redux.dart';
 import 'package:redux_thunk/redux_thunk.dart';
@@ -20,9 +21,10 @@ import 'package:tasbal/src/redux/app_state.dart';
 /// アプリケーションのエントリーポイント
 ///
 /// 1. ロガーの初期化
-/// 2. 依存性の登録（DI）
-/// 3. Reduxストアの作成
-/// 4. アプリの起動
+/// 2. Hiveの初期化
+/// 3. 依存性の登録（DI）
+/// 4. Reduxストアの作成
+/// 5. アプリの起動
 void main() async {
   // Flutterバインディングの初期化（非同期処理前に必須）
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +36,10 @@ void main() async {
 
   final logger = AppLogger.getLogger('Main');
   logger.info('アプリケーション起動開始 - 環境: ${Environment.environmentName}');
+
+  // Hiveの初期化（ローカルストレージ）
+  await Hive.initFlutter();
+  logger.info('Hive初期化完了');
 
   // 依存性の登録
   await addDependencies();

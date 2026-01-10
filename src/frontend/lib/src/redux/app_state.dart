@@ -5,6 +5,7 @@
 library;
 
 import 'package:equatable/equatable.dart';
+import 'package:tasbal/src/features/auth/presentation/redux/auth_state.dart';
 
 /// アプリケーション全体の状態
 ///
@@ -16,22 +17,26 @@ class AppState extends Equatable {
   /// 画面全体を覆うスピナーの表示/非表示を制御
   final bool isLoading;
 
+  /// 認証状態
+  final AuthState authState;
+
   // TODO: 各機能のStateを追加
-  // final AuthState authState;
   // final TaskState taskState;
   // final BalloonState balloonState;
 
   /// コンストラクタ
   const AppState({
     required this.isLoading,
+    required this.authState,
   });
 
   /// 初期状態を生成
   ///
   /// アプリケーション起動時の初期値を返す
   factory AppState.initial() {
-    return const AppState(
+    return AppState(
       isLoading: false,
+      authState: AuthState.initial(),
     );
   }
 
@@ -40,15 +45,18 @@ class AppState extends Equatable {
   /// イミュータブルな更新を実現
   AppState copyWith({
     bool? isLoading,
+    AuthState? authState,
   }) {
     return AppState(
       isLoading: isLoading ?? this.isLoading,
+      authState: authState ?? this.authState,
     );
   }
 
   @override
   List<Object?> get props => [
         isLoading,
+        authState,
         // TODO: 各機能のStateを追加
       ];
 }

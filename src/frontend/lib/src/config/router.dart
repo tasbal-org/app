@@ -4,8 +4,18 @@
 /// アプリケーション全体の画面遷移を管理
 library;
 
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tasbal/src/core/di/injection.dart';
+import 'package:tasbal/src/enums/device_platform.dart';
+import 'package:tasbal/src/features/auth/domain/repositories/auth_repository.dart';
+import 'package:tasbal/src/features/auth/domain/use_cases/guest_auth_use_case.dart';
+import 'package:tasbal/src/features/auth/domain/use_cases/register_device_use_case.dart';
+import 'package:tasbal/src/features/auth/presentation/screens/account_selection_screen.dart';
+import 'package:tasbal/src/features/onboarding/domain/use_cases/check_onboarding_use_case.dart';
+import 'package:tasbal/src/features/onboarding/presentation/screens/onboarding_screen.dart';
 
 /// ルーターインスタンス
 ///
@@ -22,6 +32,38 @@ final GoRouter router = GoRouter(
       name: 'splash',
       builder: (context, state) => const SplashScreen(),
     ),
+
+    // ============================================================
+    // オンボーディング画面
+    // ============================================================
+    GoRoute(
+      path: '/onboarding',
+      name: 'onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
+
+    // ============================================================
+    // 認証画面群
+    // ============================================================
+    GoRoute(
+      path: '/auth/account-selection',
+      name: 'account-selection',
+      builder: (context, state) => const AccountSelectionScreen(),
+    ),
+
+    // TODO: サインアップ画面
+    // GoRoute(
+    //   path: '/auth/signup',
+    //   name: 'signup',
+    //   builder: (context, state) => const SignupScreen(),
+    // ),
+
+    // TODO: ログイン画面
+    // GoRoute(
+    //   path: '/auth/login',
+    //   name: 'login',
+    //   builder: (context, state) => const LoginScreen(),
+    // ),
 
     // ============================================================
     // メイン画面（タブ構造）
@@ -48,14 +90,159 @@ final GoRouter router = GoRouter(
 /// スプラッシュ画面
 ///
 /// アプリケーション起動時に表示される初期画面
-class SplashScreen extends StatelessWidget {
+/// 初回起動判定を行い、適切な画面に遷移
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  /// 初期化処理
+  ///
+  /// アプリ起動時の初期化フロー
+  /// 1. オンボーディング完了チェック
+  /// 2. デバイス登録チェック・実行
+  /// 3. ゲスト認証チェック・実行
+  /// 4. 適切な画面へ遷移
+  Future<void> _initialize() async {
+    try {
+      // 最小表示時間を確保（スプラッシュ表示）
+      await Future.delayed(const Duration(milliseconds: 800));
+
+      // 1. オンボーディング完了チェック
+      final checkOnboardingUseCase = sl<CheckOnboardingUseCase>();
+      final onboardingResult = await checkOnboardingUseCase();
+
+      final hasCompletedOnboarding = onboardingResult.fold(
+        (failure) {
+          debugPrint('オンボーディング状態の取得に失敗: ${failure.message}');
+          return false; // エラー時は未完了として扱う
+        },
+        (completed) => completed,
+      );
+
+      if (!mounted) return;
+
+      // オンボーディング未完了の場合はオンボーディングへ
+      if (!hasCompletedOnboarding) {
+        context.go('/onboarding');
+        return;
+      }
+
+      // 2. デバイス登録チェック・実行
+      final registerDeviceUseCase = sl<RegisterDeviceUseCase>();
+      final guestAuthUseCase = sl<GuestAuthUseCase>();
+
+      // デバイス登録状態を確認（保存されているデバイス情報を取得）
+      final authRepository = sl<AuthRepository>();
+      final savedDeviceResult = await authRepository.getSavedDevice();
+
+      String? deviceKey;
+
+      final hasSavedDevice = savedDeviceResult.fold(
+        (failure) => false,
+        (device) {
+          if (device != null) {
+            deviceKey = device.deviceKey;
+            return true;
+          }
+          return false;
+        },
+      );
+
+      // デバイス未登録の場合は登録
+      if (!hasSavedDevice) {
+        final devicePlatform = Platform.isIOS
+            ? DevicePlatform.IOS
+            : Platform.isAndroid
+                ? DevicePlatform.Android
+                : DevicePlatform.Web;
+
+        final deviceName = '${devicePlatform.displayName}デバイス';
+
+        final registerResult = await registerDeviceUseCase(
+          deviceName: deviceName,
+          pushToken: null, // TODO: プッシュ通知トークンの取得
+        );
+
+        registerResult.fold(
+          (failure) {
+            debugPrint('デバイス登録に失敗: ${failure.message}');
+            // 登録失敗時もホームへ（ゲスト機能のみで使用可能）
+          },
+          (device) {
+            deviceKey = device.deviceKey;
+            debugPrint('デバイス登録成功: ${device.deviceKey}');
+          },
+        );
+      }
+
+      // 3. ゲスト認証チェック・実行
+      if (deviceKey != null) {
+        // 保存されているトークンを確認
+        final savedTokenResult = await authRepository.getSavedToken();
+
+        final hasValidToken = savedTokenResult.fold(
+          (failure) => false,
+          (token) => token?.isValid ?? false,
+        );
+
+        // トークンがない、または無効な場合はゲスト認証
+        if (!hasValidToken) {
+          final guestAuthResult = await guestAuthUseCase(
+            deviceKey: deviceKey!,
+          );
+
+          guestAuthResult.fold(
+            (failure) {
+              debugPrint('ゲスト認証に失敗: ${failure.message}');
+            },
+            (result) {
+              debugPrint('ゲスト認証成功: ${result.user.handle}');
+            },
+          );
+        }
+      }
+
+      if (!mounted) return;
+
+      // 4. ホーム画面へ遷移
+      context.go('/home');
+    } catch (e) {
+      debugPrint('初期化エラー: $e');
+      if (!mounted) return;
+      // エラー時もホームへ遷移（アプリを使用可能にする）
+      context.go('/home');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: CircularProgressIndicator(),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // TODO: アプリアイコンを表示
+            Text(
+              'Tasbal',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 24),
+            CircularProgressIndicator(),
+          ],
+        ),
       ),
     );
   }
