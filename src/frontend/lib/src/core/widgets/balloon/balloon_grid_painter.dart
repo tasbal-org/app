@@ -36,9 +36,11 @@ class BalloonGridPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 仕様に基づくデフォルトカラー
-    final defaultLightColor = const Color(0xFFE9EEF2); // Grid / Shadow (Light)
-    final defaultDarkColor = const Color(0xFF2A313B); // Grid / Shadow (Dark)
+    // tasbal.pngに基づくデフォルトカラー（紫/ラベンダー系）
+    // ライトモード: 薄いラベンダーグレー
+    const defaultLightColor = Color(0xFFD0D0E8); // Light lavender grid
+    // ダークモード: 濃いめの青紫
+    const defaultDarkColor = Color(0xFF4A4A7C); // Dark purple-blue grid
 
     final baseColor = isDarkMode
         ? (darkModeColor ?? defaultDarkColor)

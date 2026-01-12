@@ -22,14 +22,15 @@ class BalloonBackgroundPainter extends CustomPainter {
   }
 
   /// 背景グラデーションを描画
+  /// tasbal.pngに基づく紫/ラベンダー系のグラデーション
   void _drawBackgroundGradient(Canvas canvas, Size size) {
     final gradient = isDarkMode
         ? const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF1A2028), // 上：やや明るめ（圧迫感を避ける）
-              Color(0xFF0F141A), // 下：落ち着いた暗さ
+              Color(0xFF1E1E3C), // 上：濃紺/青紫
+              Color(0xFF141428), // 下：より暗い紫
             ],
             stops: [0.0, 1.0],
           )
@@ -37,8 +38,8 @@ class BalloonBackgroundPainter extends CustomPainter {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFFFFFF), // 上：より白寄り（安心・余白）
-              Color(0xFFF6F8FA), // 下：わずかに色味を残す
+              Color(0xFFF0F0FF), // 上：薄いラベンダー白
+              Color(0xFFE8E0F8), // 下：わずかに紫味
             ],
             stops: [0.0, 1.0],
           );
