@@ -14,15 +14,17 @@ import 'package:tasbal/src/features/auth/domain/repositories/auth_repository.dar
 import 'package:tasbal/src/features/auth/domain/use_cases/guest_auth_use_case.dart';
 import 'package:tasbal/src/features/auth/domain/use_cases/register_device_use_case.dart';
 import 'package:tasbal/src/features/auth/presentation/screens/account_selection_screen.dart';
+import 'package:tasbal/src/features/balloon/presentation/screens/balloon_test_screen.dart';
 import 'package:tasbal/src/features/onboarding/domain/use_cases/check_onboarding_use_case.dart';
 import 'package:tasbal/src/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:tasbal/src/features/task/presentation/screens/home_screen.dart' as task;
 
 /// ルーターインスタンス
 ///
 /// アプリケーション全体で使用するGoRouterの設定
 /// 各画面へのパスと遷移ロジックを定義
 final GoRouter router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/balloon-test', // 風船テスト画面を最初に表示
   routes: [
     // ============================================================
     // スプラッシュ画面（初回起動時）
@@ -71,7 +73,16 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/home',
       name: 'home',
-      builder: (context, state) => const HomeScreen(),
+      builder: (context, state) => const task.HomeScreen(),
+    ),
+
+    // ============================================================
+    // 風船テスト画面（デバッグ用）
+    // ============================================================
+    GoRoute(
+      path: '/balloon-test',
+      name: 'balloon-test',
+      builder: (context, state) => const BalloonTestScreen(),
     ),
 
     // TODO: 各機能の画面ルートを追加
@@ -243,25 +254,6 @@ class _SplashScreenState extends State<SplashScreen> {
             CircularProgressIndicator(),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// ホーム画面（3タブ構造のメイン画面）
-///
-/// タスク / 風船 / 設定 の3タブを持つ
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tasbal'),
-      ),
-      body: const Center(
-        child: Text('ホーム画面（仮実装）'),
       ),
     );
   }

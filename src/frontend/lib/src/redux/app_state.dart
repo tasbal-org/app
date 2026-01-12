@@ -6,6 +6,7 @@ library;
 
 import 'package:equatable/equatable.dart';
 import 'package:tasbal/src/features/auth/presentation/redux/auth_state.dart';
+import 'package:tasbal/src/features/task/presentation/redux/task_state.dart';
 
 /// アプリケーション全体の状態
 ///
@@ -20,14 +21,17 @@ class AppState extends Equatable {
   /// 認証状態
   final AuthState authState;
 
+  /// タスク状態
+  final TaskState taskState;
+
   // TODO: 各機能のStateを追加
-  // final TaskState taskState;
   // final BalloonState balloonState;
 
   /// コンストラクタ
   const AppState({
     required this.isLoading,
     required this.authState,
+    required this.taskState,
   });
 
   /// 初期状態を生成
@@ -37,6 +41,7 @@ class AppState extends Equatable {
     return AppState(
       isLoading: false,
       authState: AuthState.initial(),
+      taskState: TaskState.initial(),
     );
   }
 
@@ -46,10 +51,12 @@ class AppState extends Equatable {
   AppState copyWith({
     bool? isLoading,
     AuthState? authState,
+    TaskState? taskState,
   }) {
     return AppState(
       isLoading: isLoading ?? this.isLoading,
       authState: authState ?? this.authState,
+      taskState: taskState ?? this.taskState,
     );
   }
 
@@ -57,6 +64,7 @@ class AppState extends Equatable {
   List<Object?> get props => [
         isLoading,
         authState,
+        taskState,
         // TODO: 各機能のStateを追加
       ];
 }

@@ -7,6 +7,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tasbal/src/core/di/injection.dart';
+import 'package:tasbal/src/core/widgets/balloon/balloon_background.dart';
 import 'package:tasbal/src/features/onboarding/domain/use_cases/complete_onboarding_use_case.dart';
 
 /// オンボーディング画面
@@ -79,8 +80,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
+    return BalloonBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
         child: Column(
           children: [
             // スキップボタン（最終ページ以外）
@@ -133,6 +136,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

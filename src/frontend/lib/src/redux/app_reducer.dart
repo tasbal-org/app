@@ -7,6 +7,7 @@ library;
 import 'package:tasbal/src/redux/app_state.dart';
 import 'package:tasbal/src/redux/app_actions.dart';
 import 'package:tasbal/src/features/auth/presentation/redux/auth_reducer.dart';
+import 'package:tasbal/src/features/task/presentation/redux/task_reducer.dart';
 
 /// ルートReducer
 ///
@@ -22,12 +23,15 @@ AppState appReducer(AppState state, dynamic action) {
   // 認証状態の更新
   final newAuthState = authReducer(state.authState, action);
 
+  // タスク状態の更新
+  final newTaskState = taskReducer(state.taskState, action);
+
   // TODO: 他の機能のReducerを呼び出す
-  // final newTaskState = taskReducer(state.taskState, action);
   // final newBalloonState = balloonReducer(state.balloonState, action);
 
   // 更新された状態を返す
   return state.copyWith(
     authState: newAuthState,
+    taskState: newTaskState,
   );
 }

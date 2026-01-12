@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tasbal/src/core/widgets/balloon/balloon_background.dart';
 
 /// アカウント選択画面（A1）
 ///
@@ -19,8 +20,10 @@ class AccountSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
+    return BalloonBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
           child: Column(
@@ -128,6 +131,7 @@ class AccountSelectionScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
