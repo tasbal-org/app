@@ -14,7 +14,9 @@ import 'package:tasbal/src/features/auth/domain/repositories/auth_repository.dar
 import 'package:tasbal/src/features/auth/domain/use_cases/guest_auth_use_case.dart';
 import 'package:tasbal/src/features/auth/domain/use_cases/register_device_use_case.dart';
 import 'package:tasbal/src/features/auth/presentation/screens/account_selection_screen.dart';
+import 'package:tasbal/src/features/balloon/presentation/screens/balloon_inflation_test_screen.dart';
 import 'package:tasbal/src/features/balloon/presentation/screens/balloon_test_screen.dart';
+import 'package:tasbal/src/features/balloon/presentation/screens/balloon_types_test_screen.dart';
 import 'package:tasbal/src/features/onboarding/domain/use_cases/check_onboarding_use_case.dart';
 import 'package:tasbal/src/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:tasbal/src/features/task/presentation/screens/home_screen.dart' as task;
@@ -83,6 +85,24 @@ final GoRouter router = GoRouter(
       path: '/balloon-test',
       name: 'balloon-test',
       builder: (context, state) => const BalloonTestScreen(),
+    ),
+
+    // ============================================================
+    // 風船膨らみテスト画面（デバッグ用）
+    // ============================================================
+    GoRoute(
+      path: '/balloon-inflation-test',
+      name: 'balloon-inflation-test',
+      builder: (context, state) => const BalloonInflationTestScreen(),
+    ),
+
+    // ============================================================
+    // 風船タイプテスト画面（デバッグ用）
+    // ============================================================
+    GoRoute(
+      path: '/balloon-types-test',
+      name: 'balloon-types-test',
+      builder: (context, state) => const BalloonTypesTestScreen(),
     ),
 
     // TODO: 各機能の画面ルートを追加

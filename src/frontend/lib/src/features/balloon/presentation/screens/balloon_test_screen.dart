@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tasbal/src/core/widgets/balloon/balloon_background.dart';
 
 /// 風船テスト画面
@@ -59,8 +60,24 @@ class BalloonTestScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('戻る'),
+                  onPressed: () => context.go('/balloon-inflation-test'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                  ),
+                  child: const Text('膨らみ・破裂テスト'),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => context.go('/balloon-types-test'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                  ),
+                  child: const Text('風船タイプテスト'),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => context.go('/home'),
+                  child: const Text('ホームへ'),
                 ),
               ],
             ),

@@ -19,6 +19,10 @@ export 'package:tasbal/src/core/widgets/balloon/renderers/balloon_tag_renderer.d
 // Painters のエクスポート
 export 'package:tasbal/src/core/widgets/balloon/painters/base_balloon_painter.dart';
 
+// Animations のエクスポート
+export 'package:tasbal/src/core/widgets/balloon/animations/balloon_inflation.dart';
+export 'package:tasbal/src/core/widgets/balloon/animations/confetti_particle.dart';
+
 /// 風船ペインター
 ///
 /// CustomPainter を使用して風船を描画

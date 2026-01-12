@@ -7,6 +7,7 @@ library;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:tasbal/src/core/widgets/balloon/animations/balloon_inflation.dart';
 import 'package:tasbal/src/core/widgets/balloon/renderers/balloon_body_renderer.dart';
 import 'package:tasbal/src/core/widgets/balloon/renderers/balloon_shadow_renderer.dart';
 import 'package:tasbal/src/core/widgets/balloon/renderers/balloon_string_renderer.dart';
@@ -35,6 +36,9 @@ abstract class BaseBalloonPainter extends CustomPainter {
   /// デバッグモード
   final bool debugMode;
 
+  /// 膨らみ状態（オプション）
+  final BalloonInflationState? inflationState;
+
   /// レンダラー群（サブクラスで差し替え可能）
   @protected
   final BalloonBodyRenderer bodyRenderer;
@@ -49,6 +53,7 @@ abstract class BaseBalloonPainter extends CustomPainter {
     required this.balloon,
     required this.physicsState,
     this.debugMode = false,
+    this.inflationState,
     BalloonBodyRenderer? bodyRenderer,
     BalloonStringRenderer? stringRenderer,
     BalloonTagRenderer? tagRenderer,
@@ -58,10 +63,24 @@ abstract class BaseBalloonPainter extends CustomPainter {
         tagRenderer = tagRenderer ?? const BalloonTagRenderer(),
         shadowRenderer = shadowRenderer ?? const BalloonShadowRenderer();
 
+  /// 膨らみ倍率を取得
+  @protected
+  double get bulge => inflationState?.bulge ?? 1.0;
+
+  /// 破裂しているかどうか
+  @protected
+  bool get isPopped => inflationState?.isPopped ?? false;
+
   @override
   void paint(Canvas canvas, Size size) {
+    // 破裂している場合は描画しない
+    if (isPopped) {
+      return;
+    }
+
     final radius = balloon.currentRadius;
-    final hTop = radius * BalloonBodyConstants.hTopRatio;
+    final hTop = radius * BalloonBodyConstants.hTopRatio *
+        (1 + (bulge - 1) * BalloonBodyConstants.bulgeTopExpansionFactor);
 
     // 中心座標を計算
     final center = Offset(size.width / 2, hTop);
@@ -128,6 +147,7 @@ abstract class BaseBalloonPainter extends CustomPainter {
       position: center,
       radius: radius,
       color: balloon.color,
+      bulge: bulge,
     );
   }
 
@@ -173,6 +193,19 @@ abstract class BaseBalloonPainter extends CustomPainter {
         ..color = Colors.red
         ..style = PaintingStyle.fill,
     );
+
+    // 膨らみ情報
+    if (inflationState != null) {
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: 'bulge: ${bulge.toStringAsFixed(2)}',
+          style: const TextStyle(color: Colors.red, fontSize: 10),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, center + const Offset(-20, -50));
+    }
   }
 
   /// 進捗インジケーターを描画
@@ -198,7 +231,8 @@ abstract class BaseBalloonPainter extends CustomPainter {
   bool shouldRepaint(covariant BaseBalloonPainter oldDelegate) {
     return oldDelegate.physicsState != physicsState ||
         oldDelegate.balloon != balloon ||
-        oldDelegate.debugMode != debugMode;
+        oldDelegate.debugMode != debugMode ||
+        oldDelegate.inflationState != inflationState;
   }
 }
 
@@ -210,5 +244,6 @@ class StandardBalloonPainter extends BaseBalloonPainter {
     required super.balloon,
     required super.physicsState,
     super.debugMode,
+    super.inflationState,
   });
 }

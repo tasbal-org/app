@@ -19,6 +19,12 @@ class BalloonBodyConstants {
   /// 横幅の制御点倍率
   static const double widthControlPointRatio = 1.5;
 
+  /// 膨らみ時の上部拡張係数（幅より小さく膨らむ）
+  static const double bulgeTopExpansionFactor = 0.6;
+
+  /// 膨らみ時の下部拡張係数（ほぼ固定）
+  static const double bulgeBottomExpansionFactor = 0.1;
+
   const BalloonBodyConstants._();
 }
 
@@ -29,16 +35,23 @@ class BalloonBodyRenderer {
   const BalloonBodyRenderer();
 
   /// 風船本体を描画
+  ///
+  /// [bulge] 膨らみ倍率（1.0 = 通常、1.5 = 50%膨らんでいる）
   void render({
     required Canvas canvas,
     required Offset position,
     required double radius,
     required Color color,
+    double bulge = 1.0,
     bool showKnot = true,
   }) {
-    final w = radius;
-    final hTop = radius * BalloonBodyConstants.hTopRatio;
-    final hBottom = radius * BalloonBodyConstants.hBottomRatio;
+    // 膨らみを考慮した寸法計算
+    // サンプルコードの計算式に基づく
+    final w = radius * bulge;
+    final hTop = radius * BalloonBodyConstants.hTopRatio *
+        (1 + (bulge - 1) * BalloonBodyConstants.bulgeTopExpansionFactor);
+    final hBottom = radius * BalloonBodyConstants.hBottomRatio *
+        (1 + (bulge - 1) * BalloonBodyConstants.bulgeBottomExpansionFactor);
 
     // ベジェ曲線で卵型の風船を描画
     final balloonPath = _createBalloonPath(position, w, hTop, hBottom);
@@ -47,12 +60,26 @@ class BalloonBodyRenderer {
     _drawGradientFill(canvas, balloonPath, position, w, hTop, hBottom, color);
 
     // 光沢反射
-    _drawGlossyReflection(canvas, position, radius, hTop);
+    _drawGlossyReflection(canvas, position, w, hTop);
 
     // 結び目
     if (showKnot) {
       _drawKnot(canvas, position, radius, hBottom, color);
     }
+  }
+
+  /// 膨らみを考慮した風船の高さを取得
+  static double getHeight(double radius, {double bulge = 1.0}) {
+    final hTop = radius * BalloonBodyConstants.hTopRatio *
+        (1 + (bulge - 1) * BalloonBodyConstants.bulgeTopExpansionFactor);
+    final hBottom = radius * BalloonBodyConstants.hBottomRatio *
+        (1 + (bulge - 1) * BalloonBodyConstants.bulgeBottomExpansionFactor);
+    return hTop + hBottom;
+  }
+
+  /// 膨らみを考慮した風船の幅を取得
+  static double getWidth(double radius, {double bulge = 1.0}) {
+    return radius * bulge * BalloonBodyConstants.widthControlPointRatio * 2;
   }
 
   /// 風船のパスを作成
@@ -123,9 +150,9 @@ class BalloonBodyRenderer {
   }
 
   /// 光沢反射を描画
-  void _drawGlossyReflection(Canvas canvas, Offset position, double radius, double hTop) {
+  void _drawGlossyReflection(Canvas canvas, Offset position, double w, double hTop) {
     final reflectionCenter = Offset(
-      position.dx - radius * 0.45,
+      position.dx - w * 0.45,
       position.dy - hTop * 0.5,
     );
 
@@ -137,8 +164,8 @@ class BalloonBodyRenderer {
     reflectionPath.addOval(
       Rect.fromCenter(
         center: Offset.zero,
-        width: radius * 0.35,
-        height: radius * 0.7,
+        width: w * 0.35,
+        height: w * 0.7,
       ),
     );
 
