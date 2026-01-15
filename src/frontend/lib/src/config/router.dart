@@ -20,13 +20,14 @@ import 'package:tasbal/src/features/balloon/presentation/screens/balloon_types_t
 import 'package:tasbal/src/features/onboarding/domain/use_cases/check_onboarding_use_case.dart';
 import 'package:tasbal/src/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:tasbal/src/features/task/presentation/screens/home_screen.dart' as task;
+import 'package:tasbal/src/core/widgets/shell/app_shell.dart';
 
 /// ルーターインスタンス
 ///
 /// アプリケーション全体で使用するGoRouterの設定
 /// 各画面へのパスと遷移ロジックを定義
 final GoRouter router = GoRouter(
-  initialLocation: '/balloon-test', // 風船テスト画面を最初に表示
+  initialLocation: '/app-shell-test', // AppShellテスト画面を最初に表示
   routes: [
     // ============================================================
     // スプラッシュ画面（初回起動時）
@@ -76,6 +77,15 @@ final GoRouter router = GoRouter(
       path: '/home',
       name: 'home',
       builder: (context, state) => const task.HomeScreen(),
+    ),
+
+    // ============================================================
+    // AppShellテスト画面（デバッグ用）
+    // ============================================================
+    GoRoute(
+      path: '/app-shell-test',
+      name: 'app-shell-test',
+      builder: (context, state) => const AppShell(),
     ),
 
     // ============================================================
