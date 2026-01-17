@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:tasbal/src/core/widgets/balloon/balloon_background.dart';
+import 'package:tasbal/src/core/widgets/header/header.dart';
 import 'package:tasbal/src/core/widgets/navigation/navigation.dart';
 
 /// アプリシェル
@@ -54,17 +55,9 @@ class _AppShellState extends State<AppShell> {
       child: BalloonBackground(
         child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Text(
-            _navItems[_currentIndex].label,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: _isDarkMode ? Colors.white : Colors.black,
-            ),
-          ),
+        appBar: LiquidGlassHeader(
+          title: _navItems[_currentIndex].label,
+          isDarkMode: _isDarkMode,
           actions: [
             // ダークモードトグル（デモ用）
             IconButton(
@@ -79,18 +72,15 @@ class _AppShellState extends State<AppShell> {
               },
             ),
             // プロフィールアイコン
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: _isDarkMode
-                    ? Colors.white.withValues(alpha: 0.2)
-                    : Colors.grey.shade300,
-                child: Icon(
-                  Icons.person,
-                  size: 20,
-                  color: _isDarkMode ? Colors.white70 : Colors.grey.shade600,
-                ),
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: _isDarkMode
+                  ? Colors.white.withValues(alpha: 0.2)
+                  : Colors.grey.shade300,
+              child: Icon(
+                Icons.person,
+                size: 20,
+                color: _isDarkMode ? Colors.white70 : Colors.grey.shade600,
               ),
             ),
           ],
