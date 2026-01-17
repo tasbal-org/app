@@ -332,24 +332,57 @@ class BalloonBackground extends StatelessWidget {
   /// 風船タップコールバック
   final void Function(Balloon balloon)? onBalloonTap;
 
+  /// 風船の不透明度（0.0〜1.0）
+  final double balloonOpacity;
+
+  /// 風船を下部のみに表示するか
+  final bool balloonsAtBottom;
+
   const BalloonBackground({
     super.key,
     required this.child,
     this.quality = BalloonQuality.normal,
     this.debugMode = false,
     this.onBalloonTap,
+    this.balloonOpacity = 1.0,
+    this.balloonsAtBottom = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    Widget balloonLayer = BalloonBackgroundLayer(
+      quality: quality,
+      debugMode: debugMode,
+      onBalloonTap: onBalloonTap,
+    );
+
+    // 風船を半透明にする
+    if (balloonOpacity < 1.0) {
+      balloonLayer = Opacity(
+        opacity: balloonOpacity,
+        child: balloonLayer,
+      );
+    }
+
+    // 風船を下部のみに表示
+    if (balloonsAtBottom) {
+      final screenHeight = MediaQuery.of(context).size.height;
+      balloonLayer = ClipRect(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          heightFactor: 0.4, // 下部40%のみ表示
+          child: SizedBox(
+            height: screenHeight,
+            child: balloonLayer,
+          ),
+        ),
+      );
+    }
+
     return Stack(
       children: [
         // 風船背景レイヤー
-        BalloonBackgroundLayer(
-          quality: quality,
-          debugMode: debugMode,
-          onBalloonTap: onBalloonTap,
-        ),
+        balloonLayer,
 
         // 前面コンテンツ
         child,

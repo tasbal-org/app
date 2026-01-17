@@ -201,5 +201,17 @@ TaskState taskReducer(TaskState state, dynamic action) {
     return state.copyWith(clearError: true);
   }
 
+  // ============================================================
+  // デモデータ関連
+  // ============================================================
+
+  if (action is LoadDemoTasksAction) {
+    return state.copyWith(
+      tasks: action.tasks,
+      isLoading: false,
+      clearError: true,
+    );
+  }
+
   return state;
 }

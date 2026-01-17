@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:tasbal/src/core/widgets/balloon/balloon_background.dart';
 import 'package:tasbal/src/core/widgets/header/header.dart';
 import 'package:tasbal/src/core/widgets/navigation/navigation.dart';
+import 'package:tasbal/src/features/task/presentation/screens/task_screen.dart';
 
 /// アプリシェル
 ///
@@ -54,79 +55,110 @@ class _AppShellState extends State<AppShell> {
       data: _isDarkMode ? ThemeData.dark() : ThemeData.light(),
       child: BalloonBackground(
         child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: LiquidGlassHeader(
-          title: _navItems[_currentIndex].label,
-          isDarkMode: _isDarkMode,
-          actions: [
-            // ダークモードトグル（デモ用）
-            IconButton(
-              icon: Icon(
-                _isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                color: _isDarkMode ? Colors.white : Colors.black,
-              ),
-              onPressed: () {
-                setState(() {
-                  _isDarkMode = !_isDarkMode;
-                });
-              },
-            ),
-            // プロフィールアイコン
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: _isDarkMode
-                  ? Colors.white.withValues(alpha: 0.2)
-                  : Colors.grey.shade300,
-              child: Icon(
-                Icons.person,
-                size: 20,
-                color: _isDarkMode ? Colors.white70 : Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
-        body: Stack(
-          children: [
-            // メインコンテンツエリア（空）
-            const Center(
-              child: Text(
-                'コンテンツエリア',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
+          backgroundColor: Colors.transparent,
+          appBar: LiquidGlassHeader(
+            title: _navItems[_currentIndex].label,
+            isDarkMode: _isDarkMode,
+            actions: [
+              // ダークモードトグル（デモ用）
+              IconButton(
+                icon: Icon(
+                  _isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  color: _isDarkMode ? Colors.white : Colors.black,
                 ),
-              ),
-            ),
-            // ボトムナビゲーションバー
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: LiquidGlassBottomNavBar(
-                items: _navItems,
-                currentIndex: _currentIndex,
-                isDarkMode: _isDarkMode,
-                onTap: (index) {
+                onPressed: () {
                   setState(() {
-                    _currentIndex = index;
+                    _isDarkMode = !_isDarkMode;
                   });
                 },
-                // 独立した+ボタン
-                actionButton: Icon(
-                  Icons.add,
-                  size: 28,
-                  color: _isDarkMode ? Colors.white : const Color(0xFF007AFF),
-                ),
-                onActionTap: () {
-                  // TODO: 新規タスク作成画面を開く
-                  debugPrint('+ ボタンがタップされました');
-                },
               ),
-            ),
-          ],
+              // プロフィールアイコン
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: _isDarkMode
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : Colors.grey.shade300,
+                child: Icon(
+                  Icons.person,
+                  size: 20,
+                  color: _isDarkMode ? Colors.white70 : Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+          body: Stack(
+            children: [
+              // メインコンテンツエリア（タブごとの画面）
+              Padding(
+                padding: const EdgeInsets.only(bottom: 100), // ボトムナビの高さ分
+                child: _buildTabContent(),
+              ),
+              // ボトムナビゲーションバー
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: LiquidGlassBottomNavBar(
+                  items: _navItems,
+                  currentIndex: _currentIndex,
+                  isDarkMode: _isDarkMode,
+                  onTap: (index) {
+                    setState(() {
+                      _currentIndex = index;
+                    });
+                  },
+                  // 独立した+ボタン
+                  actionButton: Icon(
+                    Icons.add,
+                    size: 28,
+                    color: _isDarkMode ? Colors.white : const Color(0xFF007AFF),
+                  ),
+                  onActionTap: () {
+                    // TODO: 新規タスク作成画面を開く
+                    debugPrint('+ ボタンがタップされました');
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      ),
     );
+  }
+
+  /// タブごとのコンテンツを構築
+  Widget _buildTabContent() {
+    switch (_currentIndex) {
+      case 0:
+        // タスク画面（グラス強化モード適用）
+        return TaskScreenContent(
+          isDarkMode: _isDarkMode,
+          enhancedGlass: true, // モード5: グラス強化を常に適用
+        );
+      case 1:
+        // 風船画面（プレースホルダー）
+        return Center(
+          child: Text(
+            '風船画面',
+            style: TextStyle(
+              color: _isDarkMode ? Colors.white70 : Colors.grey,
+              fontSize: 16,
+            ),
+          ),
+        );
+      case 2:
+        // 設定画面（プレースホルダー）
+        return Center(
+          child: Text(
+            '設定画面',
+            style: TextStyle(
+              color: _isDarkMode ? Colors.white70 : Colors.grey,
+              fontSize: 16,
+            ),
+          ),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
   }
 }

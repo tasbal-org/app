@@ -102,8 +102,8 @@ class _BalloonTestScreenState extends State<BalloonTestScreen> {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => context.go('/home'),
-                    child: const Text('ホームへ'),
+                    onPressed: () => context.go('/task'),
+                    child: const Text('タスクへ'),
                   ),
                 ],
               ),

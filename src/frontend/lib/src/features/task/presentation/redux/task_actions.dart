@@ -170,3 +170,14 @@ class ToggleShowExpiredAction {
 class ClearTaskErrorAction {
   const ClearTaskErrorAction();
 }
+
+// ============================================================
+// デモデータ関連アクション
+// ============================================================
+
+/// デモデータをロード
+class LoadDemoTasksAction {
+  final List<Task> tasks;
+
+  const LoadDemoTasksAction(this.tasks);
+}

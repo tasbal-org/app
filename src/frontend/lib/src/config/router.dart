@@ -19,7 +19,7 @@ import 'package:tasbal/src/features/balloon/presentation/screens/balloon_test_sc
 import 'package:tasbal/src/features/balloon/presentation/screens/balloon_types_test_screen.dart';
 import 'package:tasbal/src/features/onboarding/domain/use_cases/check_onboarding_use_case.dart';
 import 'package:tasbal/src/features/onboarding/presentation/screens/onboarding_screen.dart';
-import 'package:tasbal/src/features/task/presentation/screens/home_screen.dart' as task;
+import 'package:tasbal/src/features/task/presentation/screens/task_screen.dart' as task;
 import 'package:tasbal/src/core/widgets/shell/app_shell.dart';
 
 /// ルーターインスタンス
@@ -27,13 +27,22 @@ import 'package:tasbal/src/core/widgets/shell/app_shell.dart';
 /// アプリケーション全体で使用するGoRouterの設定
 /// 各画面へのパスと遷移ロジックを定義
 final GoRouter router = GoRouter(
-  initialLocation: '/app-shell-test', // AppShellテスト画面を最初に表示
+  initialLocation: '/', // メインシェル画面を最初に表示
   routes: [
+    // ============================================================
+    // メインシェル画面（タブ構成）
+    // ============================================================
+    GoRoute(
+      path: '/',
+      name: 'main',
+      builder: (context, state) => const AppShell(),
+    ),
+
     // ============================================================
     // スプラッシュ画面（初回起動時）
     // ============================================================
     GoRoute(
-      path: '/',
+      path: '/splash',
       name: 'splash',
       builder: (context, state) => const SplashScreen(),
     ),
@@ -71,12 +80,12 @@ final GoRouter router = GoRouter(
     // ),
 
     // ============================================================
-    // メイン画面（タブ構造）
+    // タスク一覧画面
     // ============================================================
     GoRoute(
-      path: '/home',
-      name: 'home',
-      builder: (context, state) => const task.HomeScreen(),
+      path: '/task',
+      name: 'task',
+      builder: (context, state) => const task.TaskScreen(),
     ),
 
     // ============================================================
@@ -256,12 +265,12 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!mounted) return;
 
       // 4. ホーム画面へ遷移
-      context.go('/home');
+      context.go('/task');
     } catch (e) {
       debugPrint('初期化エラー: $e');
       if (!mounted) return;
       // エラー時もホームへ遷移（アプリを使用可能にする）
-      context.go('/home');
+      context.go('/task');
     }
   }
 

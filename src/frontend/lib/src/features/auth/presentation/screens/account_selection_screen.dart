@@ -104,8 +104,8 @@ class AccountSelectionScreen extends StatelessWidget {
               // Tertiary: あとで（いまはこのまま）
               TextButton(
                 onPressed: () {
-                  // ゲストとしてホーム画面へ
-                  context.go('/home');
+                  // ゲストとしてタスク画面へ
+                  context.go('/task');
                 },
                 child: const Text(
                   'あとで（いまはこのまま）',
