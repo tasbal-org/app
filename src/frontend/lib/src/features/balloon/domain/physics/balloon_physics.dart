@@ -57,19 +57,19 @@ class BalloonPhysicsState {
 
 /// 風船物理エンジン
 ///
-/// 設計書に基づく物理シミュレーション
-/// - 上昇速度：-8 ～ -18 px/s
+/// 物理シミュレーション
+/// - 移動速度：8 ～ 18 px/s（ランダム方向）
 /// - 横揺れ：-6 ～ +6 px/s
 /// - ゆらぎ周期：4 ～ 7 秒
 class BalloonPhysics {
   final Random _random = Random();
   final BalloonStringPhysics _stringPhysics = BalloonStringPhysics();
 
-  /// 上昇速度の最小値（px/s）
-  static const double minUpwardVelocity = -18.0;
+  /// 移動速度の最小値（px/s）
+  static const double minSpeed = 8.0;
 
-  /// 上昇速度の最大値（px/s）
-  static const double maxUpwardVelocity = -8.0;
+  /// 移動速度の最大値（px/s）
+  static const double maxSpeed = 18.0;
 
   /// 横揺れの最大振幅（px/s）
   static const double maxSwayAmplitude = 6.0;
@@ -91,9 +91,11 @@ class BalloonPhysics {
     final x = _random.nextDouble() * screenSize.width;
     final y = _random.nextDouble() * screenSize.height;
 
-    // 上昇速度：-8 ～ -18 px/s のランダム値
-    final upwardSpeed = minUpwardVelocity +
-        _random.nextDouble() * (maxUpwardVelocity - minUpwardVelocity);
+    // ランダムな方向に移動（360度どの方向にも）
+    final angle = _random.nextDouble() * 2 * pi;
+    final speed = minSpeed + _random.nextDouble() * (maxSpeed - minSpeed);
+    final velocityX = cos(angle) * speed;
+    final velocityY = sin(angle) * speed;
 
     // 横揺れ周期：4 ～ 7 秒のランダム値
     final swayPeriod =
@@ -112,7 +114,7 @@ class BalloonPhysics {
 
     return BalloonPhysicsState(
       position: position,
-      velocity: Offset(0, upwardSpeed),
+      velocity: Offset(velocityX, velocityY),
       swayPhase: swayPhase,
       swayPeriod: swayPeriod,
       stringState: stringState,
@@ -131,11 +133,11 @@ class BalloonPhysics {
     // 横揺れの位相を更新
     final newSwayPhase = state.swayPhase + (2 * pi / state.swayPeriod) * deltaTime;
 
-    // 横揺れによる横方向速度（-6 ～ +6 px/s）
+    // 横揺れによる追加の横方向速度（-6 ～ +6 px/s）
     final swayVelocity = maxSwayAmplitude * sin(newSwayPhase);
 
-    // 新しい位置を計算
-    final newX = state.position.dx + swayVelocity * deltaTime;
+    // 新しい位置を計算（X・Y両方向の速度を使用）
+    final newX = state.position.dx + state.velocity.dx * deltaTime + swayVelocity * deltaTime;
     final newY = state.position.dy + state.velocity.dy * deltaTime;
 
     var newPosition = Offset(newX, newY);

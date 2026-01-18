@@ -166,7 +166,8 @@ class BalloonCollisionDetector {
 
   /// 衝突を解決
   ///
-  /// 設計書: 反発係数 0.7、減衰 0.99/frame
+  /// 弾性衝突による運動量・エネルギー保存則に基づく衝突応答
+  /// 設計書: 反発係数 0.7
   List<BalloonPhysicsState> resolveCollisions({
     required List<BalloonPhysicsState> states,
     required List<Balloon> balloons,
@@ -181,7 +182,7 @@ class BalloonCollisionDetector {
       final balloon1 = balloons[collision.index1];
       final balloon2 = balloons[collision.index2];
 
-      // 衝突法線を計算
+      // 衝突法線を計算（風船1から風船2への方向）
       final normal = _calculateCollisionNormal(
         state1.position,
         state2.position,
@@ -195,46 +196,95 @@ class BalloonCollisionDetector {
         balloon2.currentRadius,
       );
 
+      var pos1 = state1.position;
+      var pos2 = state2.position;
+
       if (overlap > 0) {
         // 両方の風船を反対方向に押し出す
-        final pushDistance = overlap / 2;
+        final pushDistance = overlap / 2 + 0.5; // 少し余分に押し出す
         final push = Offset(
           normal.dx * pushDistance,
           normal.dy * pushDistance,
         );
 
-        newStates[collision.index1] = state1.copyWith(
-          position: Offset(
-            state1.position.dx + push.dx,
-            state1.position.dy + push.dy,
-          ),
-        );
-
-        newStates[collision.index2] = state2.copyWith(
-          position: Offset(
-            state2.position.dx - push.dx,
-            state2.position.dy - push.dy,
-          ),
-        );
+        pos1 = Offset(pos1.dx + push.dx, pos1.dy + push.dy);
+        pos2 = Offset(pos2.dx - push.dx, pos2.dy - push.dy);
       }
 
-      // 反射を適用
-      newStates[collision.index1] = physics.applyReflection(
-        state: newStates[collision.index1],
-        reflectionNormal: normal,
+      // 弾性衝突の速度計算（運動量保存則に基づく）
+      final velocities = _calculateElasticCollisionVelocities(
+        velocity1: state1.velocity,
+        velocity2: state2.velocity,
+        mass1: balloon1.currentRadius * balloon1.currentRadius, // 半径の2乗を質量として使用
+        mass2: balloon2.currentRadius * balloon2.currentRadius,
+        normal: normal,
         restitution: 0.7,
-        decay: 0.99,
       );
 
-      newStates[collision.index2] = physics.applyReflection(
-        state: newStates[collision.index2],
-        reflectionNormal: Offset(-normal.dx, -normal.dy), // 逆方向
-        restitution: 0.7,
-        decay: 0.99,
+      newStates[collision.index1] = state1.copyWith(
+        position: pos1,
+        velocity: velocities.velocity1,
+      );
+
+      newStates[collision.index2] = state2.copyWith(
+        position: pos2,
+        velocity: velocities.velocity2,
       );
     }
 
     return newStates;
+  }
+
+  /// 弾性衝突による速度計算
+  ///
+  /// 運動量保存則とエネルギー保存則に基づいて衝突後の速度を計算
+  /// v1' = v1 - (2*m2/(m1+m2)) * <v1-v2, n> * n
+  /// v2' = v2 - (2*m1/(m1+m2)) * <v2-v1, n> * n
+  ({Offset velocity1, Offset velocity2}) _calculateElasticCollisionVelocities({
+    required Offset velocity1,
+    required Offset velocity2,
+    required double mass1,
+    required double mass2,
+    required Offset normal,
+    required double restitution,
+  }) {
+    // 相対速度
+    final relativeVelocity = Offset(
+      velocity1.dx - velocity2.dx,
+      velocity1.dy - velocity2.dy,
+    );
+
+    // 法線方向の相対速度成分
+    final relVelDotNormal =
+        relativeVelocity.dx * normal.dx + relativeVelocity.dy * normal.dy;
+
+    // 離れていく方向なら衝突処理しない
+    if (relVelDotNormal > 0) {
+      return (velocity1: velocity1, velocity2: velocity2);
+    }
+
+    // 質量を考慮した衝撃力の係数
+    final totalMass = mass1 + mass2;
+    final impulseScalar = -(1 + restitution) * relVelDotNormal / totalMass;
+
+    // 衝撃力ベクトル
+    final impulse = Offset(
+      impulseScalar * normal.dx,
+      impulseScalar * normal.dy,
+    );
+
+    // 新しい速度を計算（運動量保存）
+    final newVelocity1 = Offset(
+      velocity1.dx + impulse.dx * mass2,
+      velocity1.dy + impulse.dy * mass2,
+    );
+
+    final newVelocity2 = Offset(
+      velocity2.dx - impulse.dx * mass1,
+      velocity2.dy - impulse.dy * mass1,
+    );
+
+    return (velocity1: newVelocity1, velocity2: newVelocity2);
   }
 
   /// 衝突法線を計算
