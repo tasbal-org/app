@@ -133,11 +133,13 @@ erDiagram
     UUID id PK "Task ID"
     UUID user_id FK "Creator user ID"
     varchar title "Task name"
+    text memo "Memo (optional)"
     timestamptz due_at "Due"
-    smallint status "Status(1:TODO 2:DOING 3:DONE)"
-    boolean pinned "Pinned"
+    smallint state "State(1:ACTIVE 2:COMPLETED 3:HIDDEN 4:EXPIRED)"
+    boolean is_pinned "Pinned"
     timestamptz completed_at "Completed"
-    timestamptz archived_at "Expired"
+    timestamptz hidden_at "Hidden"
+    timestamptz expired_at "Expired"
     timestamptz created_at "Created"
     timestamptz updated_at "Updated"
     timestamptz deleted_at "Deleted"
@@ -267,3 +269,30 @@ erDiagram
 - **0 is not used**
 - Match Enum / Const / Category Master / Excel Definition / DB CHECK exactly
 - Screen control and branching must always be based on category values (no string comparison)
+
+---
+
+## Task State Category (TASK_STATE)
+
+| Value | Name | Description |
+|---|------|------|
+| 1 | ACTIVE | Normal state (not completed) |
+| 2 | COMPLETED | Completed |
+| 3 | HIDDEN | Hidden (user hidden) |
+| 4 | EXPIRED | Expired (auto-archived) |
+
+### State Transitions
+
+```
+ACTIVE ──(complete)──> COMPLETED
+ACTIVE ──(hide)──> HIDDEN
+ACTIVE ──(expired)──> EXPIRED
+COMPLETED ──(uncomplete)──> ACTIVE
+HIDDEN ──(unhide)──> ACTIVE
+```
+
+### Pinned (is_pinned)
+
+- Pinning is an attribute independent of state
+- Only effective for ACTIVE, COMPLETED states
+- Pinning is ignored for HIDDEN, EXPIRED states

@@ -34,23 +34,31 @@ It eliminates numbers, rankings, and comparisons, quietly conveying "progress," 
 ### 4.1 Screen Structure
 
 ```
-┌──────────────────┐
-│ Header            │
-│  Today's date     │
-│  (Status chip)    │
-├──────────────────┤
-│ Display toggles   │
-│ [ Hidden ] [ Archive ]
-├──────────────────┤
-│ Active tasks      │
-│  □ Task A         │
-│  □ Task B         │
-│                   │
-│ Completed tasks   │
-│  ✓ Task C         │
-├──────────────────┤
-│ ＋ (FAB)          │
-└──────────────────┘
+┌──────────────────────┐
+│ Header                 │
+│  Today's date          │
+├──────────────────────┤
+│ Display toggles        │
+│ [ Hidden ] [ Archive ] │
+├──────────────────────┤
+│ Pinned                 │
+│  📌 Task A             │
+│  📌 Task B             │
+├──────────────────────┤
+│ With Due Date          │
+│  📅 Task C (1/20)       │
+│  📅 Task D (1/25)       │
+├──────────────────────┤
+│ Tasks                  │
+│  □ Task E              │
+│  □ Task F              │
+├──────────────────────┤
+│ Completed              │
+│  ✓ Task G              │
+│  ✓ Task H              │
+├──────────────────────┤
+│ ＋ (FAB)               │
+└──────────────────────┘
 ```
 
 ### 4.2 Display Toggles
@@ -60,31 +68,108 @@ It eliminates numbers, rankings, and comparisons, quietly conveying "progress," 
 | Hidden | OFF | Show hidden tasks |
 | Archive | OFF | Show expired tasks |
 
+※ Toggles are implemented as **Liquid Glass FilterChip** (semi-transparent glass chips)
+
 ### 4.3 Task States
 
 | State | Display | Progress |
 | ---- | ----------- | -- |
-| Normal | Normal list | × |
+| Active | Normal list | × |
 | Completed | Completed section | ○ |
 | Hidden | Only when toggle ON | × |
 | Expired | Only when archive toggle ON | × |
 
-### 4.4 Operations (Gestures)
+#### 4.3.1 Pinned Tasks
 
-#### Swipe Operations
+* Pinning is display priority (independent of state)
+* Pinned tasks are shown in "Pinned" section
+* Hidden/Expired tasks are not shown in pinned section
+
+※ Pinning is not "evaluation", just "keeping in sight".
+
+### 4.4 Section Structure
+
+Task list consists of 4 sections (shown only when applicable):
+
+| Section | Condition | Sort Order |
+| --------- | -------- | -------- |
+| Pinned | Pinned tasks | Created date |
+| With Due Date | Has due date, not completed, not pinned | Due date (ascending) |
+| Tasks | No due date, not completed, not pinned | Created date |
+| Completed | Completed state (excluding pinned) | Completed date |
+
+### 4.5 Task Items
+
+#### 4.5.1 Task Card Specification
+
+Each task is displayed as **Liquid Glass TaskCard**:
+
+| Element | Description |
+| ---- | ---- |
+| Checkbox | Toggle completion |
+| Title | Task name (required) |
+| Memo | Detail memo (optional, 1 line) |
+| Tags | Displayed as color chips (multiple) |
+| Due Date | Due datetime (when set) |
+| Pin Icon | Pin status indicator |
+
+#### 4.5.2 Tags
+
+* Tags are managed as string list
+* Multiple tags per task supported
+* Tags displayed as small chips on card
+* Autocomplete from existing tags
+* Tags have no meaning or evaluation (classification only)
+
+### 4.6 Operations (Gestures)
+
+Task rows should be operable without screen transitions.
+
+#### 4.6.1 Swipe Operations
 
 * Left swipe: Show action buttons
   * [Hide]
   * [Delete] (with confirmation dialog)
 
 * Right swipe: Pin toggle
-  * Pinned tasks shown at top of list
+  * Pinned tasks move to "Pinned" section
 
-#### Tap Operation
+#### 4.6.2 Tap Operations
 
-* Tap: Toggle completion
-  * No screen transition on completion
+* Checkbox tap: Toggle completion
+  * No screen transition
   * Background balloon reacts (inflation/pop check)
+
+* Card body tap: Show edit sheet
+  * Edit title
+  * Edit memo
+  * Set due date
+  * Edit tags
+
+#### 4.6.3 Long Press
+
+* Long press: Show edit sheet (same as tap)
+
+### 4.7 Task Creation & Editing
+
+#### 4.7.1 Task Creation Sheet
+
+**Liquid Glass BottomSheet** shown by tapping FAB (+):
+
+| Field | Required | Description |
+| ---- | ---- | ---- |
+| Title | ○ | Task name (cannot create if empty) |
+| Memo | × | Detail memo (multiline) |
+| Due Date | × | Set via DateTimePicker |
+| Tags | × | Text input with autocomplete |
+
+#### 4.7.2 Task Edit Sheet
+
+Edit sheet shown by tapping existing task:
+
+* Same fields as creation sheet
+* Delete button added
+* Pin toggle added
 
 ---
 

@@ -180,11 +180,40 @@
 
 `POST /tasks`
 
+#### リクエスト
+
 ```json
 {
   "title": "散歩する",
+  "memo": "10分だけでもOK",
   "due_at": "2026-01-06T23:59:59+09:00",
-  "memo": "10分だけでもOK"
+  "tags": ["健康", "朝活"]
+}
+```
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| title | string | ○ | タスク名（1文字以上） |
+| memo | string | × | 詳細メモ |
+| due_at | string (ISO8601) | × | 期限日時 |
+| tags | string[] | × | タグ一覧 |
+
+#### レスポンス
+
+```json
+{
+  "task": {
+    "id": "uuid",
+    "title": "散歩する",
+    "memo": "10分だけでもOK",
+    "state": "ACTIVE",
+    "is_pinned": false,
+    "due_at": "2026-01-06T23:59:59+09:00",
+    "tags": ["健康", "朝活"],
+    "created_at": "2026-01-06T10:00:00Z",
+    "updated_at": "2026-01-06T10:00:00Z",
+    "completed_at": null
+  }
 }
 ```
 
@@ -192,7 +221,18 @@
 
 ### 5.2 タスク一覧
 
-`GET /tasks?limit=20&cursor=...`
+`GET /tasks?limit=20&cursor=...&include_hidden=false&include_expired=false`
+
+#### クエリパラメータ
+
+| パラメータ | 型 | デフォルト | 説明 |
+|-----------|-----|-----------|------|
+| limit | integer | 20 | 取得件数 |
+| cursor | string | - | ページングカーソル |
+| include_hidden | boolean | false | 非表示タスクを含む |
+| include_expired | boolean | false | 期限切れタスクを含む |
+
+#### レスポンス
 
 ```json
 {
@@ -200,7 +240,14 @@
     {
       "id": "uuid",
       "title": "散歩する",
-      "is_done": false
+      "memo": "10分だけでもOK",
+      "state": "ACTIVE",
+      "is_pinned": true,
+      "due_at": "2026-01-06T23:59:59+09:00",
+      "tags": ["健康", "朝活"],
+      "created_at": "2026-01-06T10:00:00Z",
+      "updated_at": "2026-01-06T10:00:00Z",
+      "completed_at": null
     }
   ],
   "next_cursor": "..."
@@ -209,19 +256,43 @@
 
 ---
 
-### 5.3 完了切替（風船加算トリガ）
+### 5.3 タスク更新
+
+`PATCH /tasks/{taskId}`
+
+#### リクエスト
+
+```json
+{
+  "title": "散歩する（更新）",
+  "memo": "15分に延長",
+  "due_at": "2026-01-07T23:59:59+09:00",
+  "tags": ["健康", "朝活", "運動"]
+}
+```
+
+※ 更新したいフィールドのみ送信可能
+
+---
+
+### 5.4 完了切替（風船加算トリガ）
 
 `POST /tasks/{taskId}/toggle-done`
+
+#### リクエスト
 
 ```json
 { "is_done": true }
 ```
 
+#### レスポンス
+
 ```json
 {
   "task": {
     "id": "uuid",
-    "is_done": true
+    "state": "COMPLETED",
+    "completed_at": "2026-01-06T12:00:00Z"
   },
   "balloon_reaction": {
     "popped_balloon_ids": ["uuid"],
@@ -229,6 +300,52 @@
   }
 }
 ```
+
+---
+
+### 5.5 ピン留め切替
+
+`POST /tasks/{taskId}/toggle-pin`
+
+#### リクエスト
+
+```json
+{ "is_pinned": true }
+```
+
+#### レスポンス
+
+```json
+{
+  "task": {
+    "id": "uuid",
+    "is_pinned": true
+  }
+}
+```
+
+---
+
+### 5.6 タスク削除
+
+`DELETE /tasks/{taskId}`
+
+#### レスポンス
+
+```json
+{ "success": true }
+```
+
+---
+
+### 5.7 タスク状態（state）
+
+| 値 | 説明 |
+|----|------|
+| ACTIVE | 通常状態（未完了） |
+| COMPLETED | 完了 |
+| HIDDEN | 非表示 |
+| EXPIRED | 期限切れ（自動アーカイブ） |
 
 ---
 

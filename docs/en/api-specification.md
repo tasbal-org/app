@@ -180,11 +180,40 @@ Common error codes:
 
 `POST /tasks`
 
+#### Request
+
 ```json
 {
   "title": "Take a walk",
+  "memo": "Even 10 minutes is OK",
   "due_at": "2026-01-06T23:59:59+09:00",
-  "memo": "Even 10 minutes is OK"
+  "tags": ["health", "morning"]
+}
+```
+
+| Field | Type | Required | Description |
+|-----------|-----|------|------|
+| title | string | ○ | Task name (1+ characters) |
+| memo | string | × | Detail memo |
+| due_at | string (ISO8601) | × | Due datetime |
+| tags | string[] | × | Tag list |
+
+#### Response
+
+```json
+{
+  "task": {
+    "id": "uuid",
+    "title": "Take a walk",
+    "memo": "Even 10 minutes is OK",
+    "state": "ACTIVE",
+    "is_pinned": false,
+    "due_at": "2026-01-06T23:59:59+09:00",
+    "tags": ["health", "morning"],
+    "created_at": "2026-01-06T10:00:00Z",
+    "updated_at": "2026-01-06T10:00:00Z",
+    "completed_at": null
+  }
 }
 ```
 
@@ -192,7 +221,18 @@ Common error codes:
 
 ### 5.2 Task List
 
-`GET /tasks?limit=20&cursor=...`
+`GET /tasks?limit=20&cursor=...&include_hidden=false&include_expired=false`
+
+#### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|-----|-----------|------|
+| limit | integer | 20 | Number of items |
+| cursor | string | - | Paging cursor |
+| include_hidden | boolean | false | Include hidden tasks |
+| include_expired | boolean | false | Include expired tasks |
+
+#### Response
 
 ```json
 {
@@ -200,7 +240,14 @@ Common error codes:
     {
       "id": "uuid",
       "title": "Take a walk",
-      "is_done": false
+      "memo": "Even 10 minutes is OK",
+      "state": "ACTIVE",
+      "is_pinned": true,
+      "due_at": "2026-01-06T23:59:59+09:00",
+      "tags": ["health", "morning"],
+      "created_at": "2026-01-06T10:00:00Z",
+      "updated_at": "2026-01-06T10:00:00Z",
+      "completed_at": null
     }
   ],
   "next_cursor": "..."
@@ -209,19 +256,43 @@ Common error codes:
 
 ---
 
-### 5.3 Toggle Completion (Balloon Addition Trigger)
+### 5.3 Update Task
+
+`PATCH /tasks/{taskId}`
+
+#### Request
+
+```json
+{
+  "title": "Take a walk (updated)",
+  "memo": "Extended to 15 minutes",
+  "due_at": "2026-01-07T23:59:59+09:00",
+  "tags": ["health", "morning", "exercise"]
+}
+```
+
+※ Only send fields you want to update
+
+---
+
+### 5.4 Toggle Completion (Balloon Addition Trigger)
 
 `POST /tasks/{taskId}/toggle-done`
+
+#### Request
 
 ```json
 { "is_done": true }
 ```
 
+#### Response
+
 ```json
 {
   "task": {
     "id": "uuid",
-    "is_done": true
+    "state": "COMPLETED",
+    "completed_at": "2026-01-06T12:00:00Z"
   },
   "balloon_reaction": {
     "popped_balloon_ids": ["uuid"],
@@ -229,6 +300,52 @@ Common error codes:
   }
 }
 ```
+
+---
+
+### 5.5 Toggle Pin
+
+`POST /tasks/{taskId}/toggle-pin`
+
+#### Request
+
+```json
+{ "is_pinned": true }
+```
+
+#### Response
+
+```json
+{
+  "task": {
+    "id": "uuid",
+    "is_pinned": true
+  }
+}
+```
+
+---
+
+### 5.6 Delete Task
+
+`DELETE /tasks/{taskId}`
+
+#### Response
+
+```json
+{ "success": true }
+```
+
+---
+
+### 5.7 Task States
+
+| Value | Description |
+|----|------|
+| ACTIVE | Normal state (not completed) |
+| COMPLETED | Completed |
+| HIDDEN | Hidden (user hidden) |
+| EXPIRED | Expired (auto-archived) |
 
 ---
 
