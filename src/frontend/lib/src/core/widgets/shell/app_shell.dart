@@ -5,10 +5,16 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:tasbal/src/core/widgets/balloon/balloon_background.dart';
 import 'package:tasbal/src/core/widgets/header/header.dart';
 import 'package:tasbal/src/core/widgets/navigation/navigation.dart';
+import 'package:tasbal/src/enums/task_state.dart';
+import 'package:tasbal/src/features/task/domain/entities/task.dart';
+import 'package:tasbal/src/features/task/presentation/redux/task_actions.dart';
 import 'package:tasbal/src/features/task/presentation/screens/task_screen.dart';
+import 'package:tasbal/src/features/task/presentation/widgets/liquid_glass_create_task_sheet.dart';
+import 'package:tasbal/src/redux/app_state.dart';
 
 /// アプリシェル
 ///
@@ -113,16 +119,42 @@ class _AppShellState extends State<AppShell> {
                     size: 28,
                     color: _isDarkMode ? Colors.white : const Color(0xFF007AFF),
                   ),
-                  onActionTap: () {
-                    // TODO: 新規タスク作成画面を開く
-                    debugPrint('+ ボタンがタップされました');
-                  },
+                  onActionTap: () => _showCreateTaskSheet(context),
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// タスク作成シートを表示
+  void _showCreateTaskSheet(BuildContext context) {
+    showCreateTaskSheet(
+      context: context,
+      isDarkMode: _isDarkMode,
+      onTasksCreated: (taskInputs) {
+        // デモ用：タスクを一括追加
+        final store = StoreProvider.of<AppState>(context, listen: false);
+        final now = DateTime.now();
+
+        for (var i = 0; i < taskInputs.length; i++) {
+          final input = taskInputs[i];
+          final newTask = Task(
+            id: '${now.millisecondsSinceEpoch}_$i',
+            title: input.title,
+            memo: input.memo,
+            state: TaskState.Active,
+            isPinned: false,
+            dueAt: input.dueAt,
+            tags: input.tags,
+            createdAt: now,
+            updatedAt: now,
+          );
+          store.dispatch(CreateTaskSuccessAction(newTask));
+        }
+      },
     );
   }
 

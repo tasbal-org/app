@@ -72,6 +72,17 @@ class TaskState extends Equatable {
     return activeTasks.where((task) => !task.isPinned).toList();
   }
 
+  /// 期限付きタスク（期限が設定されていて未完了、ピン留めも含む）
+  List<Task> get tasksWithDueDate {
+    return activeTasks.where((task) => task.hasDueDate).toList()
+      ..sort((a, b) => a.dueAt!.compareTo(b.dueAt!));
+  }
+
+  /// 期限なしタスク（期限が設定されていなくて未完了、ピン留めも含む）
+  List<Task> get tasksWithoutDueDate {
+    return activeTasks.where((task) => !task.hasDueDate).toList();
+  }
+
   @override
   List<Object?> get props => [
         tasks,

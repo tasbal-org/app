@@ -13,8 +13,10 @@ import 'package:tasbal/src/core/di/injection.dart';
 import 'package:tasbal/src/core/widgets/balloon/balloon_background.dart';
 import 'package:tasbal/src/features/task/data/demo/demo_tasks.dart';
 import 'package:tasbal/src/features/task/presentation/widgets/task.dart';
+import 'package:tasbal/src/features/task/domain/use_cases/delete_task_use_case.dart';
 import 'package:tasbal/src/features/task/domain/use_cases/get_tasks_use_case.dart';
 import 'package:tasbal/src/features/task/domain/use_cases/toggle_task_completion_use_case.dart';
+import 'package:tasbal/src/features/task/domain/use_cases/toggle_task_pin_use_case.dart';
 import 'package:tasbal/src/features/task/presentation/redux/task_actions.dart';
 import 'package:tasbal/src/features/task/presentation/redux/task_thunks.dart';
 import 'package:tasbal/src/redux/app_state.dart';
@@ -155,7 +157,8 @@ class _TaskScreenState extends State<TaskScreen> {
   Widget _buildTaskList(AppState state) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final pinnedTasks = state.taskState.pinnedTasks;
-    final unpinnedTasks = state.taskState.unpinnedTasks;
+    final tasksWithDueDate = state.taskState.tasksWithDueDate;
+    final tasksWithoutDueDate = state.taskState.tasksWithoutDueDate;
     final completedTasks = state.taskState.completedTasks;
 
     return RefreshIndicator(
@@ -177,14 +180,26 @@ class _TaskScreenState extends State<TaskScreen> {
                   .toList(),
             ),
 
-          // 通常タスク
-          if (unpinnedTasks.isNotEmpty)
+          // 期限付きタスク
+          if (tasksWithDueDate.isNotEmpty)
+            LiquidGlassTaskListSection(
+              title: '期限付き',
+              count: tasksWithDueDate.length,
+              isDarkMode: isDarkMode,
+              icon: Icons.schedule,
+              children: tasksWithDueDate
+                  .map((task) => _buildTaskItem(task))
+                  .toList(),
+            ),
+
+          // 通常タスク（期限なし）
+          if (tasksWithoutDueDate.isNotEmpty)
             LiquidGlassTaskListSection(
               title: 'タスク',
-              count: unpinnedTasks.length,
+              count: tasksWithoutDueDate.length,
               isDarkMode: isDarkMode,
               icon: Icons.task_alt,
-              children: unpinnedTasks
+              children: tasksWithoutDueDate
                   .map((task) => _buildTaskItem(task))
                   .toList(),
             ),
@@ -214,9 +229,13 @@ class _TaskScreenState extends State<TaskScreen> {
       title: task.title,
       memo: task.memo,
       isCompleted: task.isCompleted,
-      isPinned: isPinned,
+      isPinned: task.isPinned,
       isDarkMode: isDarkMode,
+      tags: task.tags,
+      dueAt: task.dueAt,
       onCompletionChanged: (completed) => _toggleTaskCompletion(task.id, completed),
+      onPinChanged: (pinned) => _toggleTaskPin(task.id, pinned),
+      onDelete: () => _deleteTask(task.id),
       onTap: () {
         // タスク詳細画面へ遷移（将来実装）
         debugPrint('Task tapped: ${task.title}');
@@ -292,6 +311,29 @@ class _TaskScreenState extends State<TaskScreen> {
       useCase: useCase,
       id: id,
       completed: completed,
+    ));
+  }
+
+  /// タスクピン留め切替
+  void _toggleTaskPin(String id, bool pinned) {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final useCase = sl<ToggleTaskPinUseCase>();
+
+    store.dispatch(toggleTaskPinThunk(
+      useCase: useCase,
+      id: id,
+      pinned: pinned,
+    ));
+  }
+
+  /// タスク削除
+  void _deleteTask(String id) {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final useCase = sl<DeleteTaskUseCase>();
+
+    store.dispatch(deleteTaskThunk(
+      useCase: useCase,
+      id: id,
     ));
   }
 
@@ -423,7 +465,8 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
     final isDarkMode = widget.isDarkMode;
     final enhancedGlass = widget.enhancedGlass;
     final pinnedTasks = state.taskState.pinnedTasks;
-    final unpinnedTasks = state.taskState.unpinnedTasks;
+    final tasksWithDueDate = state.taskState.tasksWithDueDate;
+    final tasksWithoutDueDate = state.taskState.tasksWithoutDueDate;
     final completedTasks = state.taskState.completedTasks;
 
     return RefreshIndicator(
@@ -446,15 +489,28 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
                   .toList(),
             ),
 
-          // 通常タスク
-          if (unpinnedTasks.isNotEmpty)
+          // 期限付きタスク
+          if (tasksWithDueDate.isNotEmpty)
+            LiquidGlassTaskListSection(
+              title: '期限付き',
+              count: tasksWithDueDate.length,
+              isDarkMode: isDarkMode,
+              icon: Icons.schedule,
+              enhancedGlass: enhancedGlass,
+              children: tasksWithDueDate
+                  .map((task) => _buildTaskItem(task))
+                  .toList(),
+            ),
+
+          // 通常タスク（期限なし）
+          if (tasksWithoutDueDate.isNotEmpty)
             LiquidGlassTaskListSection(
               title: 'タスク',
-              count: unpinnedTasks.length,
+              count: tasksWithoutDueDate.length,
               isDarkMode: isDarkMode,
               icon: Icons.task_alt,
               enhancedGlass: enhancedGlass,
-              children: unpinnedTasks
+              children: tasksWithoutDueDate
                   .map((task) => _buildTaskItem(task))
                   .toList(),
             ),
@@ -485,9 +541,13 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
       title: task.title,
       memo: task.memo,
       isCompleted: task.isCompleted,
-      isPinned: isPinned,
+      isPinned: task.isPinned,
       isDarkMode: isDarkMode,
+      tags: task.tags,
+      dueAt: task.dueAt,
       onCompletionChanged: (completed) => _toggleTaskCompletion(task.id, completed),
+      onPinChanged: (pinned) => _toggleTaskPin(task.id, pinned),
+      onDelete: () => _deleteTask(task.id),
       onTap: () {
         // タスク詳細画面へ遷移（将来実装）
         debugPrint('Task tapped: ${task.title}');
@@ -563,6 +623,29 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
       useCase: useCase,
       id: id,
       completed: completed,
+    ));
+  }
+
+  /// タスクピン留め切替
+  void _toggleTaskPin(String id, bool pinned) {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final useCase = sl<ToggleTaskPinUseCase>();
+
+    store.dispatch(toggleTaskPinThunk(
+      useCase: useCase,
+      id: id,
+      pinned: pinned,
+    ));
+  }
+
+  /// タスク削除
+  void _deleteTask(String id) {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final useCase = sl<DeleteTaskUseCase>();
+
+    store.dispatch(deleteTaskThunk(
+      useCase: useCase,
+      id: id,
     ));
   }
 }

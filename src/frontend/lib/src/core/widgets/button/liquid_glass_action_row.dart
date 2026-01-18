@@ -1,0 +1,81 @@
+/// Widget: LiquidGlassActionRow
+///
+/// Liquid Glassスタイルのアクションボタン行
+library;
+
+import 'package:flutter/material.dart';
+import 'liquid_glass_primary_button.dart';
+import 'liquid_glass_secondary_button.dart';
+
+/// アクションボタン行ウィジェット（キャンセル + 確定）
+class LiquidGlassActionRow extends StatelessWidget {
+  /// 確定ボタンのラベル
+  final String primaryLabel;
+
+  /// キャンセルボタンのラベル
+  final String secondaryLabel;
+
+  /// ダークモードかどうか
+  final bool isDarkMode;
+
+  /// 確定ボタンタップ時のコールバック
+  final VoidCallback? onPrimaryTap;
+
+  /// キャンセルボタンタップ時のコールバック
+  final VoidCallback? onSecondaryTap;
+
+  /// 確定ボタンが有効かどうか
+  final bool primaryEnabled;
+
+  /// 水平パディング
+  final double horizontalPadding;
+
+  /// 垂直パディング
+  final double verticalPadding;
+
+  /// ボタン間のスペース
+  final double spacing;
+
+  const LiquidGlassActionRow({
+    super.key,
+    required this.primaryLabel,
+    required this.isDarkMode,
+    this.secondaryLabel = 'キャンセル',
+    this.onPrimaryTap,
+    this.onSecondaryTap,
+    this.primaryEnabled = true,
+    this.horizontalPadding = 20,
+    this.verticalPadding = 12,
+    this.spacing = 12,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: LiquidGlassSecondaryButton(
+              label: secondaryLabel,
+              isDarkMode: isDarkMode,
+              onTap: onSecondaryTap,
+            ),
+          ),
+          SizedBox(width: spacing),
+          Expanded(
+            child: LiquidGlassPrimaryButton(
+              label: primaryLabel,
+              isDarkMode: isDarkMode,
+              onTap: onPrimaryTap,
+              enabled: primaryEnabled,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
