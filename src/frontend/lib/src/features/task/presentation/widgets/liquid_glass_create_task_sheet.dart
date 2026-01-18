@@ -9,12 +9,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:tasbal/src/core/widgets/button/button.dart';
-import 'package:tasbal/src/core/widgets/chip/chip.dart';
 import 'package:tasbal/src/core/widgets/form/form.dart';
 import 'package:tasbal/src/core/widgets/sheet/sheet.dart';
+import 'package:tasbal/src/features/task/presentation/widgets/form/form.dart';
 
 // TaskInputをre-export（後方互換性のため）
-export 'package:tasbal/src/core/widgets/form/task_input.dart';
+export 'package:tasbal/src/features/task/presentation/widgets/form/task_input.dart';
 
 /// タスク作成ボトムシートを表示
 ///
@@ -398,16 +398,16 @@ class _LiquidGlassCreateTaskSheetState
                 onTap: () => _showDatePicker(index),
                 onClear: () => _clearDueAt(index),
               ),
-              // タグ設定
-              LiquidGlassTagRow(
+              // タグ設定（インライン入力）
+              LiquidGlassInlineTagField(
                 tags: row.tags,
-                isDarkMode: widget.isDarkMode,
-                onAddTap: () => _showAddTagDialog(index),
-                onTagRemove: (tagIndex) {
+                availableTags: _getAllExistingTags(),
+                onTagsChanged: (newTags) {
                   setState(() {
-                    row.tags.removeAt(tagIndex);
+                    row.tags = newTags;
                   });
                 },
+                isDarkMode: widget.isDarkMode,
               ),
             ],
           ],
@@ -428,64 +428,4 @@ class _LiquidGlassCreateTaskSheetState
     return tags.toList()..sort();
   }
 
-  /// タグ追加ダイアログを表示
-  void _showAddTagDialog(int rowIndex) {
-    final allTags = _getAllExistingTags();
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor:
-              widget.isDarkMode ? const Color(0xFF2C2C2E) : Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'タグを追加',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: widget.isDarkMode ? Colors.white : Colors.black87,
-            ),
-          ),
-          content: SizedBox(
-            width: 280,
-            child: FreeSoloAutocomplete(
-              options: allTags,
-              isDarkMode: widget.isDarkMode,
-              autofocus: true,
-              hintText: 'タグ名を入力または選択',
-              showCreateOption: true,
-              createOptionLabel: (value) => '「$value」を新規作成',
-              onSelected: (value) {
-                if (value.trim().isNotEmpty) {
-                  setState(() {
-                    // 重複チェック
-                    if (!_taskRows[rowIndex].tags.contains(value.trim())) {
-                      _taskRows[rowIndex].tags.add(value.trim());
-                    }
-                  });
-                  Navigator.of(dialogContext).pop();
-                }
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(
-                'キャンセル',
-                style: TextStyle(
-                  color: widget.isDarkMode
-                      ? Colors.white.withValues(alpha: 0.6)
-                      : Colors.black.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }

@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tasbal/src/features/task/presentation/widgets/form/task_edit_form.dart';
 import 'package:tasbal/src/core/widgets/swipe/swipe.dart';
 
 /// Liquid Glass効果のタスクカード
@@ -49,6 +50,12 @@ class LiquidGlassTaskCard extends StatelessWidget {
   /// タップ時のコールバック
   final VoidCallback? onTap;
 
+  /// 編集時のコールバック
+  final void Function(String title, String? memo, DateTime? dueAt, List<String> tags)? onEdit;
+
+  /// 利用可能なタグ一覧（オートコンプリート用）
+  final List<String> availableTags;
+
   const LiquidGlassTaskCard({
     super.key,
     required this.id,
@@ -64,6 +71,8 @@ class LiquidGlassTaskCard extends StatelessWidget {
     this.onDelete,
     this.onHide,
     this.onTap,
+    this.onEdit,
+    this.availableTags = const [],
   });
 
   @override
@@ -114,6 +123,8 @@ class LiquidGlassTaskCard extends StatelessWidget {
           onPinChanged: onPinChanged,
           onDelete: onDelete,
           onTap: onTap,
+          onEdit: onEdit,
+          availableTags: availableTags,
         ),
       ),
     );
@@ -161,6 +172,8 @@ class _TaskCardContent extends StatelessWidget {
   final ValueChanged<bool>? onPinChanged;
   final VoidCallback? onDelete;
   final VoidCallback? onTap;
+  final void Function(String title, String? memo, DateTime? dueAt, List<String> tags)? onEdit;
+  final List<String> availableTags;
 
   const _TaskCardContent({
     required this.title,
@@ -174,6 +187,8 @@ class _TaskCardContent extends StatelessWidget {
     this.onPinChanged,
     this.onDelete,
     this.onTap,
+    this.onEdit,
+    this.availableTags = const [],
   });
 
   @override
@@ -185,7 +200,7 @@ class _TaskCardContent extends StatelessWidget {
       },
       onLongPress: () {
         HapticFeedback.mediumImpact();
-        _showContextMenu(context);
+        _showEditDialog(context);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -379,7 +394,7 @@ class _TaskCardContent extends StatelessWidget {
     if (daysDiff == 1) return '明日';
     if (daysDiff == -1) return '昨日';
     if (daysDiff < 0) return '${-daysDiff}日前';
-    if (daysDiff <= 7) return '${daysDiff}日後';
+    if (daysDiff <= 7) return '$daysDiff日後';
     return '${dueAt!.month}/${dueAt!.day}';
   }
 
@@ -439,30 +454,109 @@ class _TaskCardContent extends StatelessWidget {
     );
   }
 
-  /// コンテキストメニュー
-  void _showContextMenu(BuildContext context) {
-    final menuTextColor = isDarkMode ? Colors.white : Colors.black87;
+  /// 編集ダイアログを表示
+  void _showEditDialog(BuildContext context) {
     final menuBackgroundColor = isDarkMode ? const Color(0xFF2A2A3E) : Colors.white;
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (context) => _TaskEditSheet(
+        title: title,
+        memo: memo,
+        dueAt: dueAt,
+        tags: tags,
+        isPinned: isPinned,
+        isDarkMode: isDarkMode,
+        backgroundColor: menuBackgroundColor,
+        availableTags: availableTags,
+        onSave: (newTitle, newMemo, newDueAt, newTags) {
+          onEdit?.call(newTitle, newMemo, newDueAt, newTags);
+        },
+        onPinChanged: onPinChanged,
+        onDelete: onDelete,
+      ),
+    );
+  }
+}
+
+/// タスク編集シート
+class _TaskEditSheet extends StatelessWidget {
+  final String title;
+  final String? memo;
+  final DateTime? dueAt;
+  final List<String> tags;
+  final bool isPinned;
+  final bool isDarkMode;
+  final Color backgroundColor;
+  final List<String> availableTags;
+  final void Function(String title, String? memo, DateTime? dueAt, List<String> tags) onSave;
+  final ValueChanged<bool>? onPinChanged;
+  final VoidCallback? onDelete;
+
+  const _TaskEditSheet({
+    required this.title,
+    this.memo,
+    this.dueAt,
+    required this.tags,
+    required this.isPinned,
+    required this.isDarkMode,
+    required this.backgroundColor,
+    this.availableTags = const [],
+    required this.onSave,
+    this.onPinChanged,
+    this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
         decoration: BoxDecoration(
-          color: menuBackgroundColor,
+          color: backgroundColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHandle(),
-              _buildMenuTitle(menuTextColor),
-              const Divider(height: 1),
-              _buildPinMenuItem(context, menuTextColor),
-              _buildDeleteMenuItem(context),
-              const SizedBox(height: 8),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHandle(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: TaskEditForm(
+                    initialData: TaskFormData(
+                      title: title,
+                      memo: memo,
+                      dueAt: dueAt,
+                      tags: tags,
+                      isPinned: isPinned,
+                    ),
+                    availableTags: availableTags,
+                    isDarkMode: isDarkMode,
+                    deleteConfirmTitle: title,
+                    onSave: (data) {
+                      onSave(data.title, data.memo, data.dueAt, data.tags);
+                      Navigator.pop(context);
+                    },
+                    onCancel: () => Navigator.pop(context),
+                    onDelete: onDelete != null
+                        ? () {
+                            Navigator.pop(context);
+                            onDelete!();
+                          }
+                        : null,
+                    onPinChanged: onPinChanged,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
@@ -472,84 +566,16 @@ class _TaskCardContent extends StatelessWidget {
   Widget _buildHandle() {
     return Container(
       margin: const EdgeInsets.only(top: 12, bottom: 8),
-      width: 40,
-      height: 4,
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? Colors.white.withValues(alpha: 0.3)
-            : Colors.black.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(2),
-      ),
-    );
-  }
-
-  Widget _buildMenuTitle(Color textColor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: textColor,
+      alignment: Alignment.center,
+      child: Container(
+        width: 40,
+        height: 4,
+        decoration: BoxDecoration(
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.3)
+              : Colors.black.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(2),
         ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-
-  Widget _buildPinMenuItem(BuildContext context, Color textColor) {
-    return ListTile(
-      leading: Icon(
-        isPinned ? Icons.push_pin_outlined : Icons.push_pin,
-        color: textColor,
-      ),
-      title: Text(
-        isPinned ? 'ピン留め解除' : 'ピン留め',
-        style: TextStyle(color: textColor),
-      ),
-      onTap: () {
-        Navigator.pop(context);
-        HapticFeedback.lightImpact();
-        onPinChanged?.call(!isPinned);
-      },
-    );
-  }
-
-  Widget _buildDeleteMenuItem(BuildContext context) {
-    final deleteColor = isDarkMode ? Colors.red.shade300 : Colors.red.shade600;
-    return ListTile(
-      leading: Icon(Icons.delete_outline, color: deleteColor),
-      title: Text('削除', style: TextStyle(color: deleteColor)),
-      onTap: () {
-        Navigator.pop(context);
-        _showDeleteConfirmation(context);
-      },
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('タスクを削除'),
-        content: Text('「$title」を削除しますか？\nこの操作は取り消せません。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              HapticFeedback.mediumImpact();
-              onDelete?.call();
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除'),
-          ),
-        ],
       ),
     );
   }

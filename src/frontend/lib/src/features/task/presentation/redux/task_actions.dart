@@ -181,3 +181,49 @@ class LoadDemoTasksAction {
 
   const LoadDemoTasksAction(this.tasks);
 }
+
+/// ローカルでタスク完了切替（デモ用）
+class ToggleTaskCompletionLocalAction {
+  final String id;
+  final bool completed;
+
+  const ToggleTaskCompletionLocalAction({
+    required this.id,
+    required this.completed,
+  });
+}
+
+/// ローカルでタスクピン留め切替（デモ用）
+class ToggleTaskPinLocalAction {
+  final String id;
+  final bool pinned;
+
+  const ToggleTaskPinLocalAction({
+    required this.id,
+    required this.pinned,
+  });
+}
+
+/// ローカルでタスク削除（デモ用）
+class DeleteTaskLocalAction {
+  final String id;
+
+  const DeleteTaskLocalAction(this.id);
+}
+
+/// ローカルでタスク編集（デモ用）
+class UpdateTaskLocalAction {
+  final String id;
+  final String title;
+  final String? memo;
+  final DateTime? dueAt;
+  final List<String> tags;
+
+  const UpdateTaskLocalAction({
+    required this.id,
+    required this.title,
+    this.memo,
+    this.dueAt,
+    required this.tags,
+  });
+}

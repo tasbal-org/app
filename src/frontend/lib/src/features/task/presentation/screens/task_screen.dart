@@ -160,6 +160,7 @@ class _TaskScreenState extends State<TaskScreen> {
     final tasksWithDueDate = state.taskState.tasksWithDueDate;
     final tasksWithoutDueDate = state.taskState.tasksWithoutDueDate;
     final completedTasks = state.taskState.completedTasks;
+    final allTags = state.taskState.allTags;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -176,7 +177,7 @@ class _TaskScreenState extends State<TaskScreen> {
               isDarkMode: isDarkMode,
               icon: Icons.push_pin,
               children: pinnedTasks
-                  .map((task) => _buildTaskItem(task, isPinned: true))
+                  .map((task) => _buildTaskItem(task, allTags: allTags, isPinned: true))
                   .toList(),
             ),
 
@@ -188,7 +189,7 @@ class _TaskScreenState extends State<TaskScreen> {
               isDarkMode: isDarkMode,
               icon: Icons.schedule,
               children: tasksWithDueDate
-                  .map((task) => _buildTaskItem(task))
+                  .map((task) => _buildTaskItem(task, allTags: allTags))
                   .toList(),
             ),
 
@@ -200,7 +201,7 @@ class _TaskScreenState extends State<TaskScreen> {
               isDarkMode: isDarkMode,
               icon: Icons.task_alt,
               children: tasksWithoutDueDate
-                  .map((task) => _buildTaskItem(task))
+                  .map((task) => _buildTaskItem(task, allTags: allTags))
                   .toList(),
             ),
 
@@ -212,7 +213,7 @@ class _TaskScreenState extends State<TaskScreen> {
               isDarkMode: isDarkMode,
               icon: Icons.check_circle_outline,
               children: completedTasks
-                  .map((task) => _buildTaskItem(task))
+                  .map((task) => _buildTaskItem(task, allTags: allTags))
                   .toList(),
             ),
         ],
@@ -221,7 +222,7 @@ class _TaskScreenState extends State<TaskScreen> {
   }
 
   /// タスクアイテム
-  Widget _buildTaskItem(dynamic task, {bool isPinned = false}) {
+  Widget _buildTaskItem(dynamic task, {required List<String> allTags, bool isPinned = false}) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return LiquidGlassTaskCard(
@@ -233,9 +234,11 @@ class _TaskScreenState extends State<TaskScreen> {
       isDarkMode: isDarkMode,
       tags: task.tags,
       dueAt: task.dueAt,
+      availableTags: allTags,
       onCompletionChanged: (completed) => _toggleTaskCompletion(task.id, completed),
       onPinChanged: (pinned) => _toggleTaskPin(task.id, pinned),
       onDelete: () => _deleteTask(task.id),
+      onEdit: (title, memo, dueAt, tags) => _updateTask(task.id, title, memo, dueAt, tags),
       onTap: () {
         // タスク詳細画面へ遷移（将来実装）
         debugPrint('Task tapped: ${task.title}');
@@ -305,8 +308,14 @@ class _TaskScreenState extends State<TaskScreen> {
   /// タスク完了切替
   void _toggleTaskCompletion(String id, bool completed) {
     final store = StoreProvider.of<AppState>(context, listen: false);
-    final useCase = sl<ToggleTaskCompletionUseCase>();
 
+    // デバッグモードではローカルで状態更新
+    if (kDebugMode) {
+      store.dispatch(ToggleTaskCompletionLocalAction(id: id, completed: completed));
+      return;
+    }
+
+    final useCase = sl<ToggleTaskCompletionUseCase>();
     store.dispatch(toggleTaskCompletionThunk(
       useCase: useCase,
       id: id,
@@ -317,8 +326,14 @@ class _TaskScreenState extends State<TaskScreen> {
   /// タスクピン留め切替
   void _toggleTaskPin(String id, bool pinned) {
     final store = StoreProvider.of<AppState>(context, listen: false);
-    final useCase = sl<ToggleTaskPinUseCase>();
 
+    // デバッグモードではローカルで状態更新
+    if (kDebugMode) {
+      store.dispatch(ToggleTaskPinLocalAction(id: id, pinned: pinned));
+      return;
+    }
+
+    final useCase = sl<ToggleTaskPinUseCase>();
     store.dispatch(toggleTaskPinThunk(
       useCase: useCase,
       id: id,
@@ -329,12 +344,38 @@ class _TaskScreenState extends State<TaskScreen> {
   /// タスク削除
   void _deleteTask(String id) {
     final store = StoreProvider.of<AppState>(context, listen: false);
-    final useCase = sl<DeleteTaskUseCase>();
 
+    // デバッグモードではローカルで状態更新
+    if (kDebugMode) {
+      store.dispatch(DeleteTaskLocalAction(id));
+      return;
+    }
+
+    final useCase = sl<DeleteTaskUseCase>();
     store.dispatch(deleteTaskThunk(
       useCase: useCase,
       id: id,
     ));
+  }
+
+  /// タスク編集
+  void _updateTask(String id, String title, String? memo, DateTime? dueAt, List<String> tags) {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+
+    // デバッグモードではローカルで状態更新
+    if (kDebugMode) {
+      store.dispatch(UpdateTaskLocalAction(
+        id: id,
+        title: title,
+        memo: memo,
+        dueAt: dueAt,
+        tags: tags,
+      ));
+      return;
+    }
+
+    // TODO: 本番用のタスク更新UseCase実装
+    debugPrint('Task updated: $title');
   }
 
   /// タスク作成ダイアログを表示
@@ -468,6 +509,7 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
     final tasksWithDueDate = state.taskState.tasksWithDueDate;
     final tasksWithoutDueDate = state.taskState.tasksWithoutDueDate;
     final completedTasks = state.taskState.completedTasks;
+    final allTags = state.taskState.allTags;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -485,7 +527,7 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
               icon: Icons.push_pin,
               enhancedGlass: enhancedGlass,
               children: pinnedTasks
-                  .map((task) => _buildTaskItem(task, isPinned: true))
+                  .map((task) => _buildTaskItem(task, allTags: allTags, isPinned: true))
                   .toList(),
             ),
 
@@ -498,7 +540,7 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
               icon: Icons.schedule,
               enhancedGlass: enhancedGlass,
               children: tasksWithDueDate
-                  .map((task) => _buildTaskItem(task))
+                  .map((task) => _buildTaskItem(task, allTags: allTags))
                   .toList(),
             ),
 
@@ -511,7 +553,7 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
               icon: Icons.task_alt,
               enhancedGlass: enhancedGlass,
               children: tasksWithoutDueDate
-                  .map((task) => _buildTaskItem(task))
+                  .map((task) => _buildTaskItem(task, allTags: allTags))
                   .toList(),
             ),
 
@@ -524,7 +566,7 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
               icon: Icons.check_circle_outline,
               enhancedGlass: enhancedGlass,
               children: completedTasks
-                  .map((task) => _buildTaskItem(task))
+                  .map((task) => _buildTaskItem(task, allTags: allTags))
                   .toList(),
             ),
         ],
@@ -533,7 +575,7 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
   }
 
   /// タスクアイテム
-  Widget _buildTaskItem(dynamic task, {bool isPinned = false}) {
+  Widget _buildTaskItem(dynamic task, {required List<String> allTags, bool isPinned = false}) {
     final isDarkMode = widget.isDarkMode;
 
     return LiquidGlassTaskCard(
@@ -545,9 +587,11 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
       isDarkMode: isDarkMode,
       tags: task.tags,
       dueAt: task.dueAt,
+      availableTags: allTags,
       onCompletionChanged: (completed) => _toggleTaskCompletion(task.id, completed),
       onPinChanged: (pinned) => _toggleTaskPin(task.id, pinned),
       onDelete: () => _deleteTask(task.id),
+      onEdit: (title, memo, dueAt, tags) => _updateTask(task.id, title, memo, dueAt, tags),
       onTap: () {
         // タスク詳細画面へ遷移（将来実装）
         debugPrint('Task tapped: ${task.title}');
@@ -617,8 +661,14 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
   /// タスク完了切替
   void _toggleTaskCompletion(String id, bool completed) {
     final store = StoreProvider.of<AppState>(context, listen: false);
-    final useCase = sl<ToggleTaskCompletionUseCase>();
 
+    // デバッグモードではローカルで状態更新
+    if (kDebugMode) {
+      store.dispatch(ToggleTaskCompletionLocalAction(id: id, completed: completed));
+      return;
+    }
+
+    final useCase = sl<ToggleTaskCompletionUseCase>();
     store.dispatch(toggleTaskCompletionThunk(
       useCase: useCase,
       id: id,
@@ -629,8 +679,14 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
   /// タスクピン留め切替
   void _toggleTaskPin(String id, bool pinned) {
     final store = StoreProvider.of<AppState>(context, listen: false);
-    final useCase = sl<ToggleTaskPinUseCase>();
 
+    // デバッグモードではローカルで状態更新
+    if (kDebugMode) {
+      store.dispatch(ToggleTaskPinLocalAction(id: id, pinned: pinned));
+      return;
+    }
+
+    final useCase = sl<ToggleTaskPinUseCase>();
     store.dispatch(toggleTaskPinThunk(
       useCase: useCase,
       id: id,
@@ -641,11 +697,37 @@ class _TaskScreenContentState extends State<TaskScreenContent> {
   /// タスク削除
   void _deleteTask(String id) {
     final store = StoreProvider.of<AppState>(context, listen: false);
-    final useCase = sl<DeleteTaskUseCase>();
 
+    // デバッグモードではローカルで状態更新
+    if (kDebugMode) {
+      store.dispatch(DeleteTaskLocalAction(id));
+      return;
+    }
+
+    final useCase = sl<DeleteTaskUseCase>();
     store.dispatch(deleteTaskThunk(
       useCase: useCase,
       id: id,
     ));
+  }
+
+  /// タスク編集
+  void _updateTask(String id, String title, String? memo, DateTime? dueAt, List<String> tags) {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+
+    // デバッグモードではローカルで状態更新
+    if (kDebugMode) {
+      store.dispatch(UpdateTaskLocalAction(
+        id: id,
+        title: title,
+        memo: memo,
+        dueAt: dueAt,
+        tags: tags,
+      ));
+      return;
+    }
+
+    // TODO: 本番用のタスク更新UseCase実装
+    debugPrint('Task updated: $title');
   }
 }

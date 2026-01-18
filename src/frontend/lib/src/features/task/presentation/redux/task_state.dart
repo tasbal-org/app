@@ -57,14 +57,14 @@ class TaskState extends Equatable {
     return visibleTasks.where((task) => task.isActive && !task.isCompleted).toList();
   }
 
-  /// 完了タスク
+  /// 完了タスク（ピン留めは除外）
   List<Task> get completedTasks {
-    return visibleTasks.where((task) => task.isCompleted).toList();
+    return visibleTasks.where((task) => task.isCompleted && !task.isPinned).toList();
   }
 
-  /// ピン留めされたタスク
+  /// ピン留めされたタスク（完了状態も含む）
   List<Task> get pinnedTasks {
-    return activeTasks.where((task) => task.isPinned).toList();
+    return visibleTasks.where((task) => task.isPinned).toList();
   }
 
   /// 非ピン留めのタスク
@@ -72,15 +72,24 @@ class TaskState extends Equatable {
     return activeTasks.where((task) => !task.isPinned).toList();
   }
 
-  /// 期限付きタスク（期限が設定されていて未完了、ピン留めも含む）
+  /// 期限付きタスク（期限が設定されていて未完了、ピン留めは除外）
   List<Task> get tasksWithDueDate {
-    return activeTasks.where((task) => task.hasDueDate).toList()
+    return unpinnedTasks.where((task) => task.hasDueDate).toList()
       ..sort((a, b) => a.dueAt!.compareTo(b.dueAt!));
   }
 
-  /// 期限なしタスク（期限が設定されていなくて未完了、ピン留めも含む）
+  /// 期限なしタスク（期限が設定されていなくて未完了、ピン留めは除外）
   List<Task> get tasksWithoutDueDate {
-    return activeTasks.where((task) => !task.hasDueDate).toList();
+    return unpinnedTasks.where((task) => !task.hasDueDate).toList();
+  }
+
+  /// 全タスクで使用されているタグ一覧（重複なし、アルファベット順）
+  List<String> get allTags {
+    final tagSet = <String>{};
+    for (final task in tasks) {
+      tagSet.addAll(task.tags);
+    }
+    return tagSet.toList()..sort();
   }
 
   @override
