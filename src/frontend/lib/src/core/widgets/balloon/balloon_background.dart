@@ -258,22 +258,34 @@ class _BalloonBackgroundLayerState extends State<BalloonBackgroundLayer>
             ),
           ),
 
-          // 風船を描画
-          for (var i = 0; i < _balloons.length; i++)
-            BalloonWidget(
-              balloon: _balloons[i],
-              physicsState: _physicsStates[i],
-              debugMode: widget.debugMode,
-              onTap: widget.onBalloonTap != null
-                  ? () => widget.onBalloonTap!(_balloons[i])
-                  : null,
-            ),
+          // 風船を描画（Y座標でソートして下にある風船を最前面に）
+          ..._buildSortedBalloons(),
 
           // デバッグ情報
           if (widget.debugMode) _buildDebugInfo(),
         ],
       ),
     );
+  }
+
+  /// Y座標でソートした風船ウィジェットのリストを作成
+  /// 下にある風船（Y座標が大きい）ほど後に描画されるため最前面に来る
+  List<Widget> _buildSortedBalloons() {
+    // インデックスと物理状態のペアを作成してY座標でソート
+    final sortedIndices = List.generate(_balloons.length, (i) => i);
+    sortedIndices.sort((a, b) =>
+        _physicsStates[a].position.dy.compareTo(_physicsStates[b].position.dy));
+
+    return sortedIndices.map((i) {
+      return BalloonWidget(
+        balloon: _balloons[i],
+        physicsState: _physicsStates[i],
+        debugMode: widget.debugMode,
+        onTap: widget.onBalloonTap != null
+            ? () => widget.onBalloonTap!(_balloons[i])
+            : null,
+      );
+    }).toList();
   }
 
   /// デバッグ情報を表示
