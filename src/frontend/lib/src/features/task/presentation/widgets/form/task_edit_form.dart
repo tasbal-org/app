@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tasbal/src/core/widgets/dialog/dialog.dart';
 import 'package:tasbal/src/core/widgets/form/liquid_glass_date_picker_row.dart';
 import 'package:tasbal/src/features/task/presentation/widgets/form/tag_autocomplete_field.dart';
 
@@ -392,30 +393,17 @@ class _TaskEditFormState extends State<TaskEditForm> {
     HapticFeedback.mediumImpact();
   }
 
-  void _showDeleteConfirmation() {
+  Future<void> _showDeleteConfirmation() async {
     final title = widget.deleteConfirmTitle ?? widget.initialData?.title ?? '';
 
-    showDialog(
+    final result = await showDeleteConfirmDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('タスクを削除'),
-        content: Text('「$title」を削除しますか？\nこの操作は取り消せません。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              HapticFeedback.mediumImpact();
-              widget.onDelete?.call();
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除'),
-          ),
-        ],
-      ),
+      itemName: title,
     );
+
+    if (result == true) {
+      HapticFeedback.mediumImpact();
+      widget.onDelete?.call();
+    }
   }
 }

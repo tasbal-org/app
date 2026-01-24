@@ -11,6 +11,7 @@ import 'package:tasbal/src/config/environment.dart';
 import 'package:tasbal/src/features/auth/di/auth_injection.dart';
 import 'package:tasbal/src/features/onboarding/di/onboarding_injection.dart';
 import 'package:tasbal/src/features/task/di/task_injection.dart';
+import 'package:tasbal/src/features/settings/di/settings_injection.dart';
 
 /// GetItのグローバルインスタンス
 ///
@@ -50,6 +51,9 @@ Future<void> addDependencies() async {
 
   // タスク機能の依存性を登録
   await addTaskDependencies(sl);
+
+  // 設定機能の依存性を登録
+  await addSettingsDependencies(sl);
 
   // TODO: 風船機能の依存性を登録
   // await addBalloonDependencies(sl);

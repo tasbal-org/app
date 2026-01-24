@@ -12,6 +12,7 @@ import 'package:tasbal/src/core/widgets/navigation/navigation.dart';
 import 'package:tasbal/src/enums/task_state.dart';
 import 'package:tasbal/src/features/task/domain/entities/task.dart';
 import 'package:tasbal/src/features/task/presentation/redux/task_actions.dart';
+import 'package:tasbal/src/features/settings/presentation/screens/settings_screen.dart';
 import 'package:tasbal/src/features/task/presentation/screens/task_screen.dart';
 import 'package:tasbal/src/features/task/presentation/widgets/liquid_glass_create_task_sheet.dart';
 import 'package:tasbal/src/redux/app_state.dart';
@@ -179,15 +180,9 @@ class _AppShellState extends State<AppShell> {
           ),
         );
       case 2:
-        // 設定画面（プレースホルダー）
-        return Center(
-          child: Text(
-            '設定画面',
-            style: TextStyle(
-              color: _isDarkMode ? Colors.white70 : Colors.grey,
-              fontSize: 16,
-            ),
-          ),
+        // 設定画面
+        return SettingsScreenContent(
+          isDarkMode: _isDarkMode,
         );
       default:
         return const SizedBox.shrink();

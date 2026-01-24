@@ -7,10 +7,11 @@ library;
 import 'package:equatable/equatable.dart';
 import 'package:tasbal/src/features/auth/presentation/redux/auth_state.dart';
 import 'package:tasbal/src/features/task/presentation/redux/task_state.dart';
+import 'package:tasbal/src/features/settings/presentation/redux/settings_state.dart';
 
 /// アプリケーション全体の状態
 ///
-/// 各機能（Auth、Task、Balloon等）のStateを保持
+/// 各機能（Auth、Task、Settings、Balloon等）のStateを保持
 /// イミュータブルな設計により、状態変更の追跡を容易にする
 class AppState extends Equatable {
   /// グローバルローディング状態
@@ -24,6 +25,9 @@ class AppState extends Equatable {
   /// タスク状態
   final TaskState taskState;
 
+  /// 設定状態
+  final SettingsState settingsState;
+
   // TODO: 各機能のStateを追加
   // final BalloonState balloonState;
 
@@ -32,6 +36,7 @@ class AppState extends Equatable {
     required this.isLoading,
     required this.authState,
     required this.taskState,
+    required this.settingsState,
   });
 
   /// 初期状態を生成
@@ -42,6 +47,7 @@ class AppState extends Equatable {
       isLoading: false,
       authState: AuthState.initial(),
       taskState: TaskState.initial(),
+      settingsState: SettingsState.initial(),
     );
   }
 
@@ -52,11 +58,13 @@ class AppState extends Equatable {
     bool? isLoading,
     AuthState? authState,
     TaskState? taskState,
+    SettingsState? settingsState,
   }) {
     return AppState(
       isLoading: isLoading ?? this.isLoading,
       authState: authState ?? this.authState,
       taskState: taskState ?? this.taskState,
+      settingsState: settingsState ?? this.settingsState,
     );
   }
 
@@ -65,6 +73,7 @@ class AppState extends Equatable {
         isLoading,
         authState,
         taskState,
+        settingsState,
         // TODO: 各機能のStateを追加
       ];
 }

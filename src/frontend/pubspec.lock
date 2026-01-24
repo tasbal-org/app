@@ -246,6 +246,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
+  flutter_liquid_glass_plus:
+    dependency: "direct main"
+    description:
+      name: flutter_liquid_glass_plus
+      sha256: a1b7e153954b20a4cfc19e0fd0b6e3d749b7fe47b7e3a15ac7c742cd01fbcd1e
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.7"
   flutter_redux:
     dependency: "direct main"
     description:

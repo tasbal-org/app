@@ -6,8 +6,10 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tasbal/src/features/task/presentation/widgets/form/task_edit_form.dart';
+import 'package:tasbal/src/core/widgets/dialog/dialog.dart';
+import 'package:tasbal/src/core/widgets/sheet/sheet.dart';
 import 'package:tasbal/src/core/widgets/swipe/swipe.dart';
+import 'package:tasbal/src/features/task/presentation/widgets/form/task_edit_form.dart';
 
 /// Liquid Glass効果のタスクカード
 class LiquidGlassTaskCard extends StatelessWidget {
@@ -132,28 +134,10 @@ class LiquidGlassTaskCard extends StatelessWidget {
 
   /// 削除確認ダイアログを表示
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
-    final result = await showDialog<bool>(
+    HapticFeedback.mediumImpact();
+    final result = await showDeleteConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('タスクを削除'),
-        content: Text('「$title」を削除しますか？\nこの操作は取り消せません。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              Navigator.pop(context, true);
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('削除'),
-          ),
-        ],
-      ),
+      itemName: title,
     );
     return result ?? false;
   }
@@ -526,7 +510,7 @@ class _TaskEditSheet extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildHandle(),
+                LiquidGlassDragHandle(isDarkMode: isDarkMode),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: TaskEditForm(
@@ -563,20 +547,4 @@ class _TaskEditSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildHandle() {
-    return Container(
-      margin: const EdgeInsets.only(top: 12, bottom: 8),
-      alignment: Alignment.center,
-      child: Container(
-        width: 40,
-        height: 4,
-        decoration: BoxDecoration(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.3)
-              : Colors.black.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
 }

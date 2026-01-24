@@ -8,6 +8,7 @@ import 'package:tasbal/src/redux/app_state.dart';
 import 'package:tasbal/src/redux/app_actions.dart';
 import 'package:tasbal/src/features/auth/presentation/redux/auth_reducer.dart';
 import 'package:tasbal/src/features/task/presentation/redux/task_reducer.dart';
+import 'package:tasbal/src/features/settings/presentation/redux/settings_reducer.dart';
 
 /// ルートReducer
 ///
@@ -26,6 +27,9 @@ AppState appReducer(AppState state, dynamic action) {
   // タスク状態の更新
   final newTaskState = taskReducer(state.taskState, action);
 
+  // 設定状態の更新
+  final newSettingsState = settingsReducer(state.settingsState, action);
+
   // TODO: 他の機能のReducerを呼び出す
   // final newBalloonState = balloonReducer(state.balloonState, action);
 
@@ -33,5 +37,6 @@ AppState appReducer(AppState state, dynamic action) {
   return state.copyWith(
     authState: newAuthState,
     taskState: newTaskState,
+    settingsState: newSettingsState,
   );
 }
