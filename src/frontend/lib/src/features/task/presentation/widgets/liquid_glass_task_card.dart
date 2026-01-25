@@ -6,10 +6,12 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_liquid_glass_plus/buttons/liquid_glass_switch.dart';
+import 'package:flutter_liquid_glass_plus/flutter_liquid_glass.dart';
 import 'package:tasbal/src/core/widgets/dialog/dialog.dart';
-import 'package:tasbal/src/core/widgets/sheet/sheet.dart';
+import 'package:tasbal/src/core/widgets/form/form.dart';
+import 'package:tasbal/src/core/widgets/modal/modal.dart';
 import 'package:tasbal/src/core/widgets/swipe/swipe.dart';
-import 'package:tasbal/src/features/task/presentation/widgets/form/task_edit_form.dart';
 
 /// Liquid Glass効果のタスクカード
 class LiquidGlassTaskCard extends StatelessWidget {
@@ -440,8 +442,6 @@ class _TaskCardContent extends StatelessWidget {
 
   /// 編集ダイアログを表示
   void _showEditDialog(BuildContext context) {
-    final menuBackgroundColor = isDarkMode ? const Color(0xFF2A2A3E) : Colors.white;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -453,7 +453,6 @@ class _TaskCardContent extends StatelessWidget {
         tags: tags,
         isPinned: isPinned,
         isDarkMode: isDarkMode,
-        backgroundColor: menuBackgroundColor,
         availableTags: availableTags,
         onSave: (newTitle, newMemo, newDueAt, newTags) {
           onEdit?.call(newTitle, newMemo, newDueAt, newTags);
@@ -466,14 +465,13 @@ class _TaskCardContent extends StatelessWidget {
 }
 
 /// タスク編集シート
-class _TaskEditSheet extends StatelessWidget {
+class _TaskEditSheet extends StatefulWidget {
   final String title;
   final String? memo;
   final DateTime? dueAt;
   final List<String> tags;
   final bool isPinned;
   final bool isDarkMode;
-  final Color backgroundColor;
   final List<String> availableTags;
   final void Function(String title, String? memo, DateTime? dueAt, List<String> tags) onSave;
   final ValueChanged<bool>? onPinChanged;
@@ -486,7 +484,6 @@ class _TaskEditSheet extends StatelessWidget {
     required this.tags,
     required this.isPinned,
     required this.isDarkMode,
-    required this.backgroundColor,
     this.availableTags = const [],
     required this.onSave,
     this.onPinChanged,
@@ -494,57 +491,295 @@ class _TaskEditSheet extends StatelessWidget {
   });
 
   @override
+  State<_TaskEditSheet> createState() => _TaskEditSheetState();
+}
+
+class _TaskEditSheetState extends State<_TaskEditSheet> {
+  late TextEditingController _titleController;
+  late TextEditingController _memoController;
+  late DateTime? _selectedDueAt;
+  late List<String> _tags;
+  late bool _isPinned;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.title);
+    _memoController = TextEditingController(text: widget.memo ?? '');
+    _selectedDueAt = widget.dueAt;
+    _tags = List<String>.from(widget.tags);
+    _isPinned = widget.isPinned;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _memoController.dispose();
+    super.dispose();
+  }
+
+  bool get _isValid => _titleController.text.trim().isNotEmpty;
+
+  void _save() {
+    if (!_isValid) return;
+
+    final newTitle = _titleController.text.trim();
+    final newMemo = _memoController.text.trim();
+
+    // ピン留め状態が変わった場合
+    if (_isPinned != widget.isPinned) {
+      widget.onPinChanged?.call(_isPinned);
+    }
+
+    widget.onSave(
+      newTitle,
+      newMemo.isEmpty ? null : newMemo,
+      _selectedDueAt,
+      _tags,
+    );
+    Navigator.pop(context);
+  }
+
+  Future<void> _confirmDelete() async {
+    final result = await showDeleteConfirmDialog(
+      context: context,
+      itemName: widget.title,
+    );
+    if (result == true && mounted) {
+      Navigator.pop(context);
+      widget.onDelete?.call();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                LiquidGlassDragHandle(isDarkMode: isDarkMode),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: TaskEditForm(
-                    initialData: TaskFormData(
-                      title: title,
-                      memo: memo,
-                      dueAt: dueAt,
-                      tags: tags,
-                      isPinned: isPinned,
+    return LiquidGlassModal(
+      title: 'タスクを編集',
+      isDarkMode: widget.isDarkMode,
+      onCancel: () => Navigator.pop(context),
+      onDone: _save,
+      doneEnabled: _isValid,
+      child: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    final textColor = widget.isDarkMode ? Colors.white : Colors.black87;
+    final subtitleColor = widget.isDarkMode
+        ? Colors.white.withValues(alpha: 0.6)
+        : Colors.black.withValues(alpha: 0.5);
+    final inputBgColor = widget.isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.04);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // タイトル入力
+          TextField(
+            controller: _titleController,
+            style: TextStyle(color: textColor, fontSize: 16),
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'タイトル',
+              labelStyle: TextStyle(color: subtitleColor),
+              filled: true,
+              fillColor: inputBgColor,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // メモ入力
+          TextField(
+            controller: _memoController,
+            style: TextStyle(color: textColor, fontSize: 14),
+            maxLines: 3,
+            decoration: InputDecoration(
+              labelText: 'メモ',
+              labelStyle: TextStyle(color: subtitleColor),
+              filled: true,
+              fillColor: inputBgColor,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 期限設定
+          InkWell(
+            onTap: _selectDueDate,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: inputBgColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.schedule, color: subtitleColor, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _selectedDueAt != null
+                          ? _formatDateTime(_selectedDueAt!)
+                          : '期限なし',
+                      style: TextStyle(
+                        color: _selectedDueAt != null ? textColor : subtitleColor,
+                        fontSize: 14,
+                      ),
                     ),
-                    availableTags: availableTags,
-                    isDarkMode: isDarkMode,
-                    deleteConfirmTitle: title,
-                    onSave: (data) {
-                      onSave(data.title, data.memo, data.dueAt, data.tags);
-                      Navigator.pop(context);
-                    },
-                    onCancel: () => Navigator.pop(context),
-                    onDelete: onDelete != null
-                        ? () {
-                            Navigator.pop(context);
-                            onDelete!();
-                          }
-                        : null,
-                    onPinChanged: onPinChanged,
+                  ),
+                  if (_selectedDueAt != null)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() => _selectedDueAt = null);
+                        HapticFeedback.lightImpact();
+                      },
+                      child: Icon(Icons.close, color: subtitleColor, size: 20),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // タグ設定
+          TagAutocompleteField(
+            availableTags: widget.availableTags,
+            selectedTags: _tags,
+            onTagsChanged: (newTags) {
+              setState(() => _tags = newTags);
+            },
+            isDarkMode: widget.isDarkMode,
+          ),
+          const SizedBox(height: 16),
+          // ピン留めスイッチ
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: inputBgColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.push_pin,
+                  color: subtitleColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'ピン留め',
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                LGSwitch(
+                  value: _isPinned,
+                  onChanged: (value) {
+                    setState(() => _isPinned = value);
+                    HapticFeedback.lightImpact();
+                  },
+                  activeColor: Colors.amber,
+                  useOwnLayer: false,
+                ),
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          // 削除ボタン
+          if (widget.onDelete != null) ...[
+            _buildDeleteButton(),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeleteButton() {
+    return Center(
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: LGButton(
+          icon: Icons.delete_outline,
+          onTap: _confirmDelete,
+          width: 48,
+          height: 48,
+          iconSize: 24,
+          iconColor: Colors.white,
+          shape: const LiquidOval(),
+          settings: const LiquidGlassSettings(
+            thickness: 0,
+            glassColor: Color(0xFFFF3B30),
+            lightIntensity: 0,
+            blur: 0,
+          ),
+          useOwnLayer: true,
+          glowColor: const Color.fromARGB(20, 255, 255, 255),
         ),
       ),
     );
   }
 
+  String _formatDateTime(DateTime dt) {
+    final now = DateTime.now();
+    final isToday =
+        dt.year == now.year && dt.month == now.month && dt.day == now.day;
+    final isTomorrow = dt.year == now.year &&
+        dt.month == now.month &&
+        dt.day == now.day + 1;
+
+    String dateStr;
+    if (isToday) {
+      dateStr = '今日';
+    } else if (isTomorrow) {
+      dateStr = '明日';
+    } else {
+      dateStr = '${dt.year}/${dt.month}/${dt.day}';
+    }
+
+    final timeStr =
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    return '$dateStr $timeStr';
+  }
+
+  Future<void> _selectDueDate() async {
+    final picked = await showLiquidGlassDateTimePicker(
+      context: context,
+      isDarkMode: widget.isDarkMode,
+      initialDate: _selectedDueAt,
+    );
+    if (picked != null) {
+      setState(() => _selectedDueAt = picked);
+      HapticFeedback.selectionClick();
+    }
+  }
 }
